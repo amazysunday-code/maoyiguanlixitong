@@ -613,43 +613,22 @@ function toast(msg, type='ok'){
 }
 
 /* ═══════════════════════════════
-   SAVE / LOAD  (Cloudflare KV)
+   SAVE / LOAD
 ═══════════════════════════════ */
-async function saveDB(){
-  try{
-    const res = await fetch('/api/save', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(DB)
-    });
-    const json = await res.json();
-    if(json.ok){ toast('✓ 已保存到云端 KV','ok'); }
-    else{ toast('保存失败: ' + (json.error||'未知错误'), 'err'); }
-  }catch(e){ toast('保存失败: ' + e.message, 'err'); }
+function saveDB(){
+  try{ localStorage.setItem('tradeDocDB', JSON.stringify(DB)); toast('已保存到本地浏览器','ok'); }
+  catch(e){ toast('保存失败: '+e.message,'err'); }
 }
-
-async function loadDB(){
+function loadDB(){
   try{
-    const res = await fetch('/api/load');
-    const json = await res.json();
-    if(json.ok && json.data){
-      DB = json.data;
-    }
-    // json.data === null 时使用默认 DEFAULT_DB，不做任何操作
-  }catch(e){ console.warn('从 KV 加载失败，使用默认数据', e); }
+    const raw = localStorage.getItem('tradeDocDB');
+    if(raw){ DB = JSON.parse(raw); }
+  }catch(e){ console.warn('Load failed',e); }
 }
-
-async function resetDB(){
+function resetDB(){
   if(!confirm('确定重置所有数据为默认值？此操作不可撤销。')) return;
   DB = JSON.parse(JSON.stringify(DEFAULT_DB));
-  // 同步重置到 KV
-  try{
-    await fetch('/api/save', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(DB)
-    });
-  }catch(e){ console.warn('KV 重置失败', e); }
+  localStorage.removeItem('tradeDocDB');
   renderAll();
   toast('已重置为默认数据','info');
 }
@@ -1349,8 +1328,8 @@ function generatePL(){
 /* ═══════════════════════════════
    INIT
 ═══════════════════════════════ */
-document.addEventListener('DOMContentLoaded', async ()=>{
-  await loadDB();
+document.addEventListener('DOMContentLoaded',()=>{
+  loadDB();
   renderAll();
 });
 </script>
