@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贸易单证生成系统 · MD800</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<style>
+:root{
+  --bg:#080B14;--bg2:#0F1320;--bg3:#171C2E;--bg4:#1E2438;
+  --gold:#C9A84C;--gold-lt:#E5C97A;--gold-dim:rgba(201,168,76,.12);--gold-dim2:rgba(201,168,76,.06);
+  --text:#EAE4D8;--text-dim:#8A8070;--text-mid:#B8B0A0;
+  --border:rgba(201,168,76,.22);--border2:rgba(255,255,255,.07);
+  --red:#D95E5E;--green:#4DBD74;--blue:#5B9BD5;
+  --r:10px;--r-lg:14px;
+  --sans:'Noto Sans SC',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --shadow:0 4px 28px rgba(0,0,0,.55);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.6}
+button{font-family:var(--sans)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.2);border-radius:3px}
+
+/* TOAST */
+#toastBox{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;font-size:12px;color:var(--text);
+  box-shadow:var(--shadow);animation:toastIn .28s ease forwards;display:flex;align-items:center;gap:9px;max-width:300px;pointer-events:auto}
+.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}.toast.info{border-color:var(--blue)}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:none;opacity:1}}
+
+/* HEADER */
+.hdr{background:rgba(8,11,20,.93);border-bottom:1px solid var(--border);backdrop-filter:blur(18px);
+  position:sticky;top:0;z-index:500;padding:0 20px}
+.hdr-inner{max-width:1340px;margin:0 auto;display:flex;align-items:center;gap:12px;height:60px}
+.hdr-brand{flex:1}
+.hdr-brand h1{font-size:17px;color:var(--gold);letter-spacing:.04em;font-weight:700}
+.hdr-brand p{font-size:10px;color:var(--text-dim);letter-spacing:.06em;margin-top:1px}
+.hdr-btns{display:flex;gap:8px;flex-shrink:0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;border:none;cursor:pointer;border-radius:8px;
+  font-size:12px;font-weight:500;padding:7px 14px;transition:all .16s;white-space:nowrap;font-family:var(--sans)}
+.btn-gold{background:linear-gradient(135deg,#D4AF5C,#A8842E);color:#1A1000;font-weight:700}
+.btn-gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-gold:active{transform:none}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border)}
+.btn-outline:hover{background:var(--gold-dim)}
+.btn-ghost{background:transparent;color:var(--text-mid);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--border2);color:var(--text)}
+.btn-danger{background:rgba(217,94,94,.15);color:var(--red);border:1px solid rgba(217,94,94,.25)}
+.btn-danger:hover{background:rgba(217,94,94,.25)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:6px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--text-dim);padding:4px 6px;border-radius:5px;
+  font-size:13px;transition:all .14s;line-height:1}
+.btn-icon:hover{color:var(--red);background:rgba(217,94,94,.1)}
+
+/* MAIN */
+.main{max-width:1340px;margin:0 auto;padding:24px 20px 80px}
+
+/* TABS */
+.tab-nav{display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);
+  padding:4px;margin-bottom:20px;width:fit-content}
+.tab-btn{padding:8px 24px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;border:none;
+  background:none;color:var(--text-dim);transition:all .18s;font-family:var(--sans)}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--gold-dim);color:var(--gold);border:1px solid var(--border)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* PANEL / CARD */
+.panel{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:16px}
+.panel-title{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px}
+.panel-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold);border-radius:2px}
+
+/* FORM GRID */
+.form-grid{display:grid;gap:10px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr}
+.form-grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-grid-6{grid-template-columns:repeat(6,1fr)}
+.form-row{display:flex;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;color:var(--text-dim);font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.inp{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;
+  color:var(--text);font-size:12px;font-family:var(--sans);width:100%;outline:none;
+  transition:border-color .15s}
+.inp:focus{border-color:var(--gold)}
+.inp::placeholder{color:var(--text-dim)}
+textarea.inp{resize:vertical;min-height:54px}
+
+/* TWO-COL INFO */
+.info-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+
+/* SECTION DIVIDER */
+.divider{height:1px;background:var(--border2);margin:16px 0}
+
+/* PRODUCT TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border2);margin-bottom:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl thead th{background:var(--bg4);padding:9px 8px;text-align:left;font-size:10px;font-weight:700;
+  color:var(--text-mid);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border2);
+  white-space:nowrap}
+.tbl thead th.center{text-align:center}
+.tbl tbody tr{border-bottom:1px solid var(--border2);transition:background .12s}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody tr:hover{background:var(--bg3)}
+.tbl tbody tr.is-dragging{opacity:.4;background:var(--gold-dim)}
+.tbl tbody tr.drag-over-top{border-top:2px solid var(--gold)}
+.tbl tbody tr.drag-over-bottom{border-bottom:2px solid var(--gold)}
+.tbl td{padding:6px 8px;vertical-align:middle}
+.tbl td.center{text-align:center}
+
+/* Drag handle */
+.drag-handle{cursor:grab;color:var(--text-dim);font-size:14px;padding:2px 4px;user-select:none;
+  display:inline-flex;align-items:center;transition:color .12s}
+.drag-handle:hover{color:var(--gold)}
+.drag-handle:active{cursor:grabbing}
+
+/* Table inputs */
+.tbl-inp{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);
+  font-size:12px;font-family:var(--sans);width:100%;outline:none;padding:2px 0;transition:border-color .14s}
+.tbl-inp:focus{border-bottom-color:var(--gold);background:rgba(201,168,76,.04);border-radius:0}
+.tbl-inp.mono{font-family:var(--mono);font-size:11px}
+.tbl-inp.right{text-align:right}
+.tbl-inp.center{text-align:center}
+.amount-cell{font-family:var(--mono);font-size:11px;color:var(--gold-lt);text-align:right;white-space:nowrap}
+
+/* Row number */
+.row-num{font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;min-width:24px}
+
+/* Footer rows */
+.tbl-footer td{background:var(--bg3);font-weight:500}
+.tbl-total td{background:var(--bg4);font-weight:700;color:var(--gold)}
+
+/* Add row btn */
+.add-row-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;cursor:pointer;color:var(--text-dim);
+  font-size:12px;transition:color .14s;background:none;border:none;font-family:var(--sans)}
+.add-row-btn:hover{color:var(--gold)}
+.add-row-btn span{font-size:18px;line-height:1}
+
+/* Footer totals */
+.doc-footer{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 0}
+.total-display{background:var(--gold-dim);border:1px solid var(--border);border-radius:8px;
+  padding:8px 16px;font-size:13px;font-weight:700;color:var(--gold);font-family:var(--mono)}
+
+/* Generate PDF section */
+.gen-section{display:flex;align-items:center;gap:12px;padding:16px 0;flex-wrap:wrap}
+.gen-section .btn{padding:10px 22px;font-size:13px}
+
+/* Notes editor */
+.notes-list{display:flex;flex-direction:column;gap:6px}
+.note-row{display:flex;align-items:center;gap:8px}
+.note-row span.note-num{font-family:var(--mono);font-size:11px;color:var(--text-dim);width:16px;flex-shrink:0}
+.note-row .inp{flex:1}
+
+/* PL summary row */
+.pl-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.summary-box{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px}
+.summary-box label{font-size:10px;color:var(--text-dim);display:block;margin-bottom:4px}
+.summary-box .val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--gold-lt)}
+
+/* Freight row */
+.freight-row td{background:rgba(201,168,76,.04)}
+
+@media(max-width:900px){
+  .form-grid-4,.form-grid-6{grid-template-columns:1fr 1fr}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+  .info-two-col{grid-template-columns:1fr}
+  .pl-summary{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .form-grid-2,.form-grid-3,.form-grid-4,.form-grid-6{grid-template-columns:1fr}
+  .tab-btn{padding:7px 14px;font-size:12px}
+  .main{padding:16px 12px 60px}
+}
+</style>
+</head>
+<body>
+
+<div id="toastBox"></div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-brand">
+      <h1>贸易单证生成系统</h1>
+      <p>MD800 SERIES · TRADE DOCUMENT GENERATOR</p>
+    </div>
+    <div class="hdr-btns">
+      <button class="btn btn-ghost btn-sm" onclick="resetDB()">↺ 重置</button>
+      <button class="btn btn-outline btn-sm" onclick="saveDB()">💾 保存</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- COMMON: SELLER & BUYER -->
+  <div class="panel">
+    <div class="panel-title">买卖双方信息（三份单据共用）</div>
+    <div class="info-two-col">
+      <div>
+        <div class="panel-title" style="font-size:10px;margin-bottom:10px">SELLER / EXPORTER 卖方</div>
+        <div class="form-grid" style="gap:8px">
+          <div class="form-group">
+            <label>Company Name 公司名称</label>
+            <input class="inp" id="sellerName" placeholder="CHANGSHU DETE TRADING CO.,LTD" oninput="DB.seller.name=this.value">
+          </div>
+          <div class="form-group">
+            <label>Address 地址</label>
+            <textarea class="inp" id="sellerAddr" rows="2" placeholder="NO.8 KAICHENG ROAD..." oninput="DB.seller.address=this.value"></textarea>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-title" style="font-size:10px;margin-bottom:10px">BUYER / IMPORTER 买方</div>
+        <div class="form-grid" style="gap:8px">
+          <div class="form-group">
+            <label>Company Name 公司名称</label>
+            <input class="inp" id="buyerName" placeholder="GTECH CO.,LTD" oninput="DB.buyer.name=this.value">
+          </div>
+          <div class="form-group">
+            <label>Address 地址</label>
+            <textarea class="inp" id="buyerAddr" rows="2" placeholder="25-28, SINCHEOK 1-GIL..." oninput="DB.buyer.address=this.value"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="pi" onclick="switchTab('pi')">📄 PI 形式发票</button>
+    <button class="tab-btn" data-tab="ci" onclick="switchTab('ci')">📋 CI 商业发票</button>
+    <button class="tab-btn" data-tab="pl" onclick="switchTab('pl')">📦 PL 箱单</button>
+  </div>
+
+  <!-- ═══════════ PI TAB ═══════════ -->
+  <div id="tab-pi" class="tab-content active">
+    <div class="panel">
+      <div class="panel-title">PI 单据信息</div>
+      <div class="form-grid form-grid-4" style="gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <label>Doc No. 单号</label>
+          <input class="inp mono" id="piDocNo" oninput="DB.pi.docNo=this.value">
+        </div>
+        <div class="form-group">
+          <label>Date 日期</label>
+          <input class="inp" id="piDate" type="date" oninput="DB.pi.date=this.value">
+        </div>
+        <div class="form-group">
+          <label>Currency 币种</label>
+          <input class="inp" id="piCurrency" oninput="DB.pi.currency=this.value">
+        </div>
+        <div class="form-group">
+          <label>Trade Terms 贸易条款</label>
+          <input class="inp" id="piTrade" oninput="DB.pi.trade=this.value">
+        </div>
+        <div class="form-group">
+          <label>Payment 付款方式</label>
+          <input class="inp" id="piPayment" oninput="DB.pi.payment=this.value">
+        </div>
+        <div class="form-group">
+          <label>Delivery Time 交货期</label>
+          <input class="inp" id="piDelivery" oninput="DB.pi.delivery=this.value">
+        </div>
+        <div class="form-group">
+          <label>Freight 运费 (USD)</label>
+          <input class="inp mono" id="piFreight" type="number" step="0.01" oninput="DB.pi.freight=parseFloat(this.value)||0;renderPITotals()">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">产品明细 <span style="color:var(--text-dim);font-weight:400;font-size:10px">— 拖动左侧 ⠿ 调整顺序</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th style="width:18px" class="center">#</th>
+              <th style="width:68px">Power</th>
+              <th style="width:72px">Function</th>
+              <th style="width:130px">Model</th>
+              <th>Description</th>
+              <th style="width:46px" class="center">Qty</th>
+              <th style="width:88px">Unit Price (USD)</th>
+              <th style="width:88px">Amount (USD)</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody id="piTbody"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addProduct()"><span>＋</span> 添加产品行</button>
+
+      <!-- Freight & Total -->
+      <div class="doc-footer">
+        <div style="flex:1;font-size:12px;color:var(--text-dim)">
+          货物小计: <span class="mono" id="piSubtotal" style="color:var(--text)">USD 0.00</span>
+          &nbsp;＋&nbsp; 运费: <span class="mono" style="color:var(--text)" id="piFreightDisplay">USD 0.00</span>
+        </div>
+        <div class="total-display">TOTAL: <span id="piTotal">USD 0.00</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Notes & Terms 备注条款</div>
+      <div id="piNotesList" class="notes-list"></div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-xs" onclick="addNote('pi')">＋ 添加条款</button>
+      </div>
+    </div>
+
+    <div class="gen-section">
+      <button class="btn btn-gold" onclick="generatePI()">⬇ 生成 PI PDF 下载</button>
+      <span style="font-size:11px;color:var(--text-dim)">将按当前表单内容生成 PROFORMA INVOICE PDF</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ CI TAB ═══════════ -->
+  <div id="tab-ci" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">CI 单据信息</div>
+      <div class="form-grid form-grid-4" style="gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <label>Doc No. 单号</label>
+          <input class="inp mono" id="ciDocNo" oninput="DB.ci.docNo=this.value">
+        </div>
+        <div class="form-group">
+          <label>Date 日期</label>
+          <input class="inp" id="ciDate" type="date" oninput="DB.ci.date=this.value">
+        </div>
+        <div class="form-group">
+          <label>Currency 币种</label>
+          <input class="inp" id="ciCurrency" oninput="DB.ci.currency=this.value">
+        </div>
+        <div class="form-group">
+          <label>Trade Terms 贸易条款</label>
+          <input class="inp" id="ciTrade" oninput="DB.ci.trade=this.value">
+        </div>
+        <div class="form-group">
+          <label>Payment 付款方式</label>
+          <input class="inp" id="ciPayment" oninput="DB.ci.payment=this.value">
+        </div>
+        <div class="form-group">
+          <label>Port of Loading 起运港</label>
+          <input class="inp" id="ciPOL" oninput="DB.ci.portOfLoading=this.value">
+        </div>
+        <div class="form-group">
+          <label>Port of Discharge 目的港</label>
+          <input class="inp" id="ciPOD" oninput="DB.ci.portOfDischarge=this.value">
+        </div>
+        <div class="form-group">
+          <label>Freight 运费 (USD)</label>
+          <input class="inp mono" id="ciFreight" type="number" step="0.01" oninput="DB.ci.freight=parseFloat(this.value)||0;renderCITotals()">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">产品明细 <span style="color:var(--text-dim);font-weight:400;font-size:10px">— 拖动左侧 ⠿ 调整顺序</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th style="width:18px" class="center">#</th>
+              <th>Description of Goods</th>
+              <th style="width:110px">HS Code</th>
+              <th style="width:90px">Country of Origin</th>
+              <th style="width:46px" class="center">Qty</th>
+              <th style="width:90px">Unit Price (USD)</th>
+              <th style="width:90px">Amount (USD)</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody id="ciTbody"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addProduct()"><span>＋</span> 添加产品行</button>
+      <div class="doc-footer">
+        <div style="flex:1;font-size:12px;color:var(--text-dim)">
+          货物小计: <span class="mono" id="ciSubtotal" style="color:var(--text)">USD 0.00</span>
+          &nbsp;＋&nbsp; 运费: <span class="mono" style="color:var(--text)" id="ciFreightDisplay">USD 0.00</span>
+        </div>
+        <div class="total-display">TOTAL: <span id="ciTotal">USD 0.00</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Notes & Terms 备注条款</div>
+      <div id="ciNotesList" class="notes-list"></div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-xs" onclick="addNote('ci')">＋ 添加条款</button>
+      </div>
+    </div>
+
+    <div class="gen-section">
+      <button class="btn btn-gold" onclick="generateCI()">⬇ 生成 CI PDF 下载</button>
+      <span style="font-size:11px;color:var(--text-dim)">将按当前表单内容生成 COMMERCIAL INVOICE PDF</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ PL TAB ═══════════ -->
+  <div id="tab-pl" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">PL 单据信息</div>
+      <div class="form-grid form-grid-4" style="gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <label>Doc No. 单号</label>
+          <input class="inp mono" id="plDocNo" oninput="DB.pl.docNo=this.value">
+        </div>
+        <div class="form-group">
+          <label>Date 日期</label>
+          <input class="inp" id="plDate" type="date" oninput="DB.pl.date=this.value">
+        </div>
+        <div class="form-group">
+          <label>Port of Loading 起运港</label>
+          <input class="inp" id="plPOL" oninput="DB.pl.portOfLoading=this.value">
+        </div>
+        <div class="form-group">
+          <label>Port of Discharge 目的港</label>
+          <input class="inp" id="plPOD" oninput="DB.pl.portOfDischarge=this.value">
+        </div>
+        <div class="form-group">
+          <label>Marks & Numbers 唛头</label>
+          <input class="inp" id="plMarks" oninput="DB.pl.marks=this.value">
+        </div>
+        <div class="form-group">
+          <label>Total Cartons 总箱数</label>
+          <input class="inp mono" id="plTotalCartons" type="number" oninput="DB.pl.totalCartons=parseInt(this.value)||0">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">产品明细（含包装信息）<span style="color:var(--text-dim);font-weight:400;font-size:10px"> — 拖动 ⠿ 调整顺序</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th style="width:18px" class="center">#</th>
+              <th style="width:120px">Model</th>
+              <th>Description</th>
+              <th style="width:70px">Carton No.</th>
+              <th style="width:56px" class="center">Qty (pcs)</th>
+              <th style="width:82px">Net Wt (kg)</th>
+              <th style="width:82px">Gross Wt (kg)</th>
+              <th style="width:110px">L×W×H (cm)</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody id="plTbody"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addProduct()"><span>＋</span> 添加产品行</button>
+
+      <!-- PL Summary -->
+      <div class="pl-summary">
+        <div class="summary-box">
+          <label>总箱数 Total Cartons</label>
+          <div class="val" id="plSumCartons">0</div>
+        </div>
+        <div class="summary-box">
+          <label>总净重 Total Net Wt (kg)</label>
+          <div class="val" id="plSumNet">0.000</div>
+        </div>
+        <div class="summary-box">
+          <label>总毛重 Total Gross Wt (kg)</label>
+          <div class="val" id="plSumGross">0.000</div>
+        </div>
+        <div class="summary-box">
+          <label>总体积 Total CBM (m³)</label>
+          <div class="val" id="plSumCBM">0.000</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Notes 备注</div>
+      <div id="plNotesList" class="notes-list"></div>
+      <div style="margin-top:8px">
+        <button class="btn btn-ghost btn-xs" onclick="addNote('pl')">＋ 添加备注</button>
+      </div>
+    </div>
+
+    <div class="gen-section">
+      <button class="btn btn-gold" onclick="generatePL()">⬇ 生成 PL PDF 下载</button>
+      <span style="font-size:11px;color:var(--text-dim)">将按当前表单内容生成 PACKING LIST PDF</span>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════
+   DEFAULT DATA
+═══════════════════════════════ */
+const DEFAULT_DB = {
+  seller:{
+    name:'CHANGSHU DETE TRADING CO.,LTD',
+    address:'NO.8 KAICHENG ROAD ZHITANG TOWN, CHANGSHU CITY, JIANGSU PROVINCE'
+  },
+  buyer:{
+    name:'GTECH CO.,LTD',
+    address:'25-28, SINCHEOK 1-GIL, DEOKSAN-MYEON, JINCHEON-GUN, CHUNGCHEONGBUK-DO, KOREA'
+  },
+  pi:{
+    docNo:'PL-MD800-2026-001', date:'2026-05-15', currency:'USD',
+    payment:'100% T/T before shipment', delivery:'14 working days', trade:'DDP Door to Door',
+    freight:294.00,
+    notes:[
+      'All prices are in USD (United States Dollar), DDP Door to Door.',
+      'Payment Terms: 100% T/T in advance before shipment.',
+      'Delivery Time: 14 working days after receipt of full payment.',
+      'DDP Freight USD 294.00 is included in the total amount above.',
+      'Warranty: 12 months from the date of delivery.',
+      'This invoice is valid for 30 days from the date of issue.'
+    ]
+  },
+  ci:{
+    docNo:'CI-MD800-2026-001', date:'2026-05-15', currency:'USD',
+    payment:'100% T/T before shipment', trade:'DDP Door to Door',
+    portOfLoading:'Shanghai, China', portOfDischarge:'Incheon, Korea', freight:294.00,
+    notes:[
+      'Country of Origin: China',
+      'All goods are new, unused and in original packing.',
+      'Warranty: 12 months from the date of delivery.'
+    ]
+  },
+  pl:{
+    docNo:'PL-MD800-2026-001', date:'2026-05-15',
+    portOfLoading:'Shanghai, China', portOfDischarge:'Incheon, Korea',
+    marks:'N/M', totalCartons:1,
+    notes:['All goods are new, unused and in original packing.']
+  },
+  products:[
+    {id:'p1',power:'0.1KW',func:'Inverter',model:'MD800-1-4T1R8',
+      description:'MD800 Series Inverter - Single Axis 0.4kW Inverter Unit',
+      qty:1,unitPrice:85.17,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:0.8,grossWeight:1.0,length:22,width:18,height:12},
+    {id:'p2',power:'1.5KW',func:'Inverter',model:'MD800-2-4T4R8',
+      description:'MD800 Series Inverter - Dual Axis 1.5kW Inverter Unit',
+      qty:1,unitPrice:137.17,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:1.5,grossWeight:1.8,length:26,width:20,height:14},
+    {id:'p3',power:'2.2KW',func:'Inverter',model:'MD800-1-4T5R5',
+      description:'MD800 Series Inverter - Single Axis 2.2kW Inverter Unit',
+      qty:1,unitPrice:105.79,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:1.2,grossWeight:1.5,length:24,width:18,height:13},
+    {id:'p4',power:'2.2KW',func:'Inverter',model:'MD800-2-4T5R5',
+      description:'MD800 Series Inverter - Dual Axis 2.2kW Inverter Unit',
+      qty:1,unitPrice:140.76,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:1.5,grossWeight:1.8,length:26,width:20,height:14},
+    {id:'p5',power:'3.7KW',func:'Inverter',model:'MD800-1-4T9R5',
+      description:'MD800 Series Inverter - Single Axis 3.7kW Inverter Unit',
+      qty:1,unitPrice:119.24,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:1.8,grossWeight:2.2,length:28,width:22,height:15},
+    {id:'p6',power:'7.5KW',func:'Inverter',model:'MD800-1-4T17',
+      description:'MD800 Series Inverter - Single Axis 7.5kW Inverter Unit',
+      qty:1,unitPrice:141.12,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:2.5,grossWeight:3.0,length:32,width:24,height:18},
+    {id:'p7',power:'15KW',func:'Rectifier',model:'MD800-0-4T41',
+      description:'Rectifier Module 15kW',
+      qty:1,unitPrice:208.90,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:4.0,grossWeight:4.8,length:38,width:28,height:22},
+    {id:'p8',power:'15KW',func:'Rectifier',model:'SI-PN',
+      description:'PN Communication Card',
+      qty:1,unitPrice:149.72,hsCode:'8473309000',origin:'China',
+      cartonNo:'1',netWeight:0.2,grossWeight:0.3,length:15,width:12,height:5},
+    {id:'p9',power:'7.5KW',func:'Rectifier',model:'MD800-0-4T22',
+      description:'Rectifier Module 7.5kW',
+      qty:1,unitPrice:191.86,hsCode:'8504409900',origin:'China',
+      cartonNo:'1',netWeight:3.0,grossWeight:3.6,length:34,width:26,height:20},
+    {id:'p10',power:'7.5KW',func:'Rectifier',model:'SI-PN',
+      description:'PN Communication Card',
+      qty:1,unitPrice:149.72,hsCode:'8473309000',origin:'China',
+      cartonNo:'1',netWeight:0.2,grossWeight:0.3,length:15,width:12,height:5},
+  ]
+};
+
+let DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+let activeTab = 'pi';
+let sortablePI=null, sortableCI=null, sortablePL=null;
+
+/* ═══════════════════════════════
+   ID GENERATOR
+═══════════════════════════════ */
+function uid(){ return 'p' + Date.now() + Math.random().toString(36).slice(2,6); }
+
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
+function toast(msg, type='ok'){
+  const box = document.getElementById('toastBox');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const icons = {ok:'✓',err:'✕',info:'ℹ'};
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span>${msg}`;
+  box.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(110%)';el.style.transition='all .3s';
+    setTimeout(()=>el.remove(),320)}, 2800);
+}
+
+/* ═══════════════════════════════
+   SAVE / LOAD
+═══════════════════════════════ */
+function saveDB(){
+  try{ localStorage.setItem('tradeDocDB', JSON.stringify(DB)); toast('已保存到本地浏览器','ok'); }
+  catch(e){ toast('保存失败: '+e.message,'err'); }
+}
+function loadDB(){
+  try{
+    const raw = localStorage.getItem('tradeDocDB');
+    if(raw){ DB = JSON.parse(raw); }
+  }catch(e){ console.warn('Load failed',e); }
+}
+function resetDB(){
+  if(!confirm('确定重置所有数据为默认值？此操作不可撤销。')) return;
+  DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+  localStorage.removeItem('tradeDocDB');
+  renderAll();
+  toast('已重置为默认数据','info');
+}
+
+/* ═══════════════════════════════
+   TAB SWITCH
+═══════════════════════════════ */
+function switchTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active', c.id==='tab-'+tab));
+  renderProducts(tab);
+}
+
+/* ═══════════════════════════════
+   RENDER ALL
+═══════════════════════════════ */
+function renderAll(){
+  // Common
+  setVal('sellerName', DB.seller.name);
+  setVal('sellerAddr', DB.seller.address);
+  setVal('buyerName', DB.buyer.name);
+  setVal('buyerAddr', DB.buyer.address);
+  // PI
+  setVal('piDocNo', DB.pi.docNo);
+  setVal('piDate', DB.pi.date);
+  setVal('piCurrency', DB.pi.currency);
+  setVal('piTrade', DB.pi.trade);
+  setVal('piPayment', DB.pi.payment);
+  setVal('piDelivery', DB.pi.delivery);
+  setVal('piFreight', DB.pi.freight);
+  // CI
+  setVal('ciDocNo', DB.ci.docNo);
+  setVal('ciDate', DB.ci.date);
+  setVal('ciCurrency', DB.ci.currency);
+  setVal('ciTrade', DB.ci.trade);
+  setVal('ciPayment', DB.ci.payment);
+  setVal('ciPOL', DB.ci.portOfLoading);
+  setVal('ciPOD', DB.ci.portOfDischarge);
+  setVal('ciFreight', DB.ci.freight);
+  // PL
+  setVal('plDocNo', DB.pl.docNo);
+  setVal('plDate', DB.pl.date);
+  setVal('plPOL', DB.pl.portOfLoading);
+  setVal('plPOD', DB.pl.portOfDischarge);
+  setVal('plMarks', DB.pl.marks);
+  setVal('plTotalCartons', DB.pl.totalCartons);
+  // Notes
+  renderNotes('pi'); renderNotes('ci'); renderNotes('pl');
+  // Products
+  renderProducts('pi'); renderProducts('ci'); renderProducts('pl');
+}
+function setVal(id, val){
+  const el = document.getElementById(id);
+  if(el) el.value = val ?? '';
+}
+
+/* ═══════════════════════════════
+   RENDER NOTES
+═══════════════════════════════ */
+function renderNotes(tab){
+  const list = document.getElementById(tab+'NotesList');
+  if(!list) return;
+  const notes = DB[tab].notes;
+  list.innerHTML = notes.map((n,i) => `
+    <div class="note-row">
+      <span class="note-num">${i+1}.</span>
+      <input class="inp" value="${escH(n)}" oninput="DB.${tab}.notes[${i}]=this.value">
+      <button class="btn-icon" onclick="removeNote('${tab}',${i})" title="删除">✕</button>
+    </div>`).join('');
+}
+function addNote(tab){
+  DB[tab].notes.push('');
+  renderNotes(tab);
+  setTimeout(()=>{
+    const list = document.getElementById(tab+'NotesList');
+    const inputs = list.querySelectorAll('input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },50);
+}
+function removeNote(tab, idx){
+  DB[tab].notes.splice(idx,1);
+  renderNotes(tab);
+}
+
+/* ═══════════════════════════════
+   ADD / DELETE PRODUCT
+═══════════════════════════════ */
+function addProduct(){
+  const last = DB.products[DB.products.length-1];
+  DB.products.push({
+    id: uid(), power:'', func:'',
+    model:'', description:'', qty:1, unitPrice:0,
+    hsCode: last ? last.hsCode : '8504409900',
+    origin: last ? last.origin : 'China',
+    cartonNo:'1', netWeight:0, grossWeight:0, length:0, width:0, height:0
+  });
+  renderProducts(activeTab);
+  // Focus last row description
+  setTimeout(()=>{
+    const tbody = document.getElementById(activeTab+'Tbody');
+    if(!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    if(rows.length){
+      const inp = rows[rows.length-1].querySelector('.tbl-inp');
+      if(inp) inp.focus();
+    }
+  },50);
+}
+function deleteProduct(id){
+  DB.products = DB.products.filter(p=>p.id!==id);
+  renderProducts(activeTab);
+  toast('已删除','info');
+}
+
+/* ═══════════════════════════════
+   RENDER PRODUCTS
+═══════════════════════════════ */
+function renderProducts(tab){
+  if(tab==='pi') renderPIProducts();
+  else if(tab==='ci') renderCIProducts();
+  else renderPLProducts();
+}
+
+function renderPIProducts(){
+  const tbody = document.getElementById('piTbody');
+  if(!tbody) return;
+  tbody.innerHTML = DB.products.map((p,i) => {
+    const amt = (p.qty * parseFloat(p.unitPrice||0)).toFixed(2);
+    return `<tr data-id="${p.id}">
+      <td><span class="drag-handle" title="拖动排序">⠿</span></td>
+      <td class="row-num center">${i+1}</td>
+      <td><input class="tbl-inp" value="${escH(p.power)}" oninput="setProd('${p.id}','power',this.value)" placeholder="0.1KW"></td>
+      <td><input class="tbl-inp" value="${escH(p.func)}" oninput="setProd('${p.id}','func',this.value)" placeholder="Inverter"></td>
+      <td><input class="tbl-inp mono" value="${escH(p.model)}" oninput="setProd('${p.id}','model',this.value)" placeholder="MD800-..."></td>
+      <td><input class="tbl-inp" value="${escH(p.description)}" oninput="setProd('${p.id}','description',this.value)"></td>
+      <td class="center"><input class="tbl-inp center" type="number" min="0" value="${p.qty}" oninput="setProd('${p.id}','qty',parseFloat(this.value)||0);renderPITotals()" style="width:40px"></td>
+      <td><input class="tbl-inp right mono" type="number" step="0.01" value="${parseFloat(p.unitPrice).toFixed(2)}" oninput="setProd('${p.id}','unitPrice',parseFloat(this.value)||0);renderPITotals()"></td>
+      <td class="amount-cell">${amt}</td>
+      <td><button class="btn-icon" onclick="deleteProduct('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  initSortable('pi');
+  renderPITotals();
+}
+
+function renderCIProducts(){
+  const tbody = document.getElementById('ciTbody');
+  if(!tbody) return;
+  tbody.innerHTML = DB.products.map((p,i) => {
+    const amt = (p.qty * parseFloat(p.unitPrice||0)).toFixed(2);
+    return `<tr data-id="${p.id}">
+      <td><span class="drag-handle" title="拖动排序">⠿</span></td>
+      <td class="row-num center">${i+1}</td>
+      <td><input class="tbl-inp" value="${escH(p.description)}" oninput="setProd('${p.id}','description',this.value)"></td>
+      <td><input class="tbl-inp mono" value="${escH(p.hsCode)}" oninput="setProd('${p.id}','hsCode',this.value)" placeholder="8504409900"></td>
+      <td><input class="tbl-inp" value="${escH(p.origin)}" oninput="setProd('${p.id}','origin',this.value)" placeholder="China"></td>
+      <td class="center"><input class="tbl-inp center" type="number" min="0" value="${p.qty}" oninput="setProd('${p.id}','qty',parseFloat(this.value)||0);renderCITotals()" style="width:40px"></td>
+      <td><input class="tbl-inp right mono" type="number" step="0.01" value="${parseFloat(p.unitPrice).toFixed(2)}" oninput="setProd('${p.id}','unitPrice',parseFloat(this.value)||0);renderCITotals()"></td>
+      <td class="amount-cell">${amt}</td>
+      <td><button class="btn-icon" onclick="deleteProduct('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  initSortable('ci');
+  renderCITotals();
+}
+
+function renderPLProducts(){
+  const tbody = document.getElementById('plTbody');
+  if(!tbody) return;
+  tbody.innerHTML = DB.products.map((p,i) => {
+    const cbm = ((p.length||0)*(p.width||0)*(p.height||0)/1000000).toFixed(4);
+    return `<tr data-id="${p.id}">
+      <td><span class="drag-handle" title="拖动排序">⠿</span></td>
+      <td class="row-num center">${i+1}</td>
+      <td><input class="tbl-inp mono" value="${escH(p.model)}" oninput="setProd('${p.id}','model',this.value)"></td>
+      <td><input class="tbl-inp" value="${escH(p.description)}" oninput="setProd('${p.id}','description',this.value)"></td>
+      <td><input class="tbl-inp center" value="${escH(p.cartonNo)}" oninput="setProd('${p.id}','cartonNo',this.value)"></td>
+      <td class="center"><input class="tbl-inp center" type="number" min="0" value="${p.qty}" oninput="setProd('${p.id}','qty',parseFloat(this.value)||0);renderPLSummary()" style="width:42px"></td>
+      <td><input class="tbl-inp right mono" type="number" step="0.001" value="${parseFloat(p.netWeight||0).toFixed(3)}" oninput="setProd('${p.id}','netWeight',parseFloat(this.value)||0);renderPLSummary()"></td>
+      <td><input class="tbl-inp right mono" type="number" step="0.001" value="${parseFloat(p.grossWeight||0).toFixed(3)}" oninput="setProd('${p.id}','grossWeight',parseFloat(this.value)||0);renderPLSummary()"></td>
+      <td>
+        <div style="display:flex;gap:2px;align-items:center">
+          <input class="tbl-inp center mono" type="number" value="${p.length||0}" oninput="setProd('${p.id}','length',parseFloat(this.value)||0);renderPLSummary()" style="width:32px" title="L">
+          <span style="color:var(--text-dim);font-size:10px">×</span>
+          <input class="tbl-inp center mono" type="number" value="${p.width||0}" oninput="setProd('${p.id}','width',parseFloat(this.value)||0);renderPLSummary()" style="width:32px" title="W">
+          <span style="color:var(--text-dim);font-size:10px">×</span>
+          <input class="tbl-inp center mono" type="number" value="${p.height||0}" oninput="setProd('${p.id}','height',parseFloat(this.value)||0);renderPLSummary()" style="width:32px" title="H">
+        </div>
+      </td>
+      <td><button class="btn-icon" onclick="deleteProduct('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  initSortable('pl');
+  renderPLSummary();
+}
+
+/* ═══════════════════════════════
+   SET PRODUCT FIELD
+═══════════════════════════════ */
+function setProd(id, field, val){
+  const p = DB.products.find(x=>x.id===id);
+  if(p) p[field] = val;
+  // Update amount cell for PI/CI
+  if((field==='qty'||field==='unitPrice') && (activeTab==='pi'||activeTab==='ci')){
+    const row = document.querySelector(`[data-id="${id}"]`);
+    if(row){
+      const amtCell = row.querySelector('.amount-cell');
+      if(amtCell && p){
+        amtCell.textContent = (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2);
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════
+   SORTABLE
+═══════════════════════════════ */
+function initSortable(tab){
+  const tbodyId = tab+'Tbody';
+  const tbody = document.getElementById(tbodyId);
+  if(!tbody) return;
+  // Destroy existing
+  if(tab==='pi' && sortablePI){ sortablePI.destroy(); sortablePI=null; }
+  if(tab==='ci' && sortableCI){ sortableCI.destroy(); sortableCI=null; }
+  if(tab==='pl' && sortablePL){ sortablePL.destroy(); sortablePL=null; }
+  const s = Sortable.create(tbody,{
+    handle:'.drag-handle', animation:150,
+    ghostClass:'is-dragging',
+    chosenClass:'is-dragging',
+    onEnd:()=>{
+      const rows = tbody.querySelectorAll('tr');
+      const newOrder = Array.from(rows).map(tr=>tr.dataset.id);
+      DB.products = newOrder.map(id=>DB.products.find(p=>p.id===id)).filter(Boolean);
+      renderProducts(tab); // re-render to update row numbers
+      toast('顺序已调整','info');
+    }
+  });
+  if(tab==='pi') sortablePI=s;
+  else if(tab==='ci') sortableCI=s;
+  else sortablePL=s;
+}
+
+/* ═══════════════════════════════
+   TOTALS
+═══════════════════════════════ */
+function calcSubtotal(){ return DB.products.reduce((s,p)=>s+(parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)),0); }
+
+function renderPITotals(){
+  const sub = calcSubtotal();
+  const freight = parseFloat(DB.pi.freight||0);
+  const total = sub + freight;
+  setText('piSubtotal', `USD ${sub.toFixed(2)}`);
+  setText('piFreightDisplay', `USD ${freight.toFixed(2)}`);
+  setText('piTotal', `USD ${total.toFixed(2)}`);
+  // Also update amount cells
+  document.querySelectorAll('#piTbody .amount-cell').forEach((cell,i)=>{
+    const p = DB.products[i];
+    if(p) cell.textContent = (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2);
+  });
+}
+function renderCITotals(){
+  const sub = calcSubtotal();
+  const freight = parseFloat(DB.ci.freight||0);
+  const total = sub + freight;
+  setText('ciSubtotal', `USD ${sub.toFixed(2)}`);
+  setText('ciFreightDisplay', `USD ${freight.toFixed(2)}`);
+  setText('ciTotal', `USD ${total.toFixed(2)}`);
+  document.querySelectorAll('#ciTbody .amount-cell').forEach((cell,i)=>{
+    const p = DB.products[i];
+    if(p) cell.textContent = (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2);
+  });
+}
+function renderPLSummary(){
+  let net=0, gross=0, cbm=0;
+  DB.products.forEach(p=>{
+    net += parseFloat(p.netWeight||0);
+    gross += parseFloat(p.grossWeight||0);
+    cbm += (parseFloat(p.length||0)*parseFloat(p.width||0)*parseFloat(p.height||0))/1000000;
+  });
+  setText('plSumCartons', DB.pl.totalCartons||1);
+  setText('plSumNet', net.toFixed(3));
+  setText('plSumGross', gross.toFixed(3));
+  setText('plSumCBM', cbm.toFixed(4));
+}
+function setText(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+/* ═══════════════════════════════
+   HELPERS
+═══════════════════════════════ */
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d){ if(!d) return ''; try{ return new Date(d+'T00:00:00').toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}); }catch{return d;} }
+function usd(n){ return 'USD ' + parseFloat(n||0).toFixed(2); }
+
+/* ═══════════════════════════════
+   PDF SHARED STYLES
+═══════════════════════════════ */
+const PDF_COLORS = {
+  headerBg:[32,38,60],     // dark blue-grey
+  headerText:[220,195,100], // gold
+  rowEven:[248,248,252],
+  rowOdd:[255,255,255],
+  totalBg:[32,38,60],
+  totalText:[220,195,100],
+  freightBg:[245,243,235],
+  border:[180,175,165],
+  textDark:[30,30,40],
+  textMid:[80,80,100],
+  accent:[32,38,60]
+};
+
+function buildDocHeader(doc, title, subtitle, db){
+  const pw=210, ml=13;
+  // Title bar
+  doc.setFillColor(...PDF_COLORS.headerBg);
+  doc.rect(0,0,pw,18,'F');
+  doc.setFontSize(15); doc.setFont('helvetica','bold');
+  doc.setTextColor(...PDF_COLORS.headerText);
+  doc.text(title, pw/2, 11, {align:'center'});
+  if(subtitle){
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.setTextColor(200,185,140);
+    doc.text(subtitle, pw/2, 16, {align:'center'});
+  }
+  return 21;
+}
+
+function buildInfoBlock(doc, startY, left, right){
+  const pw=210, ml=13, cw=(pw-2*ml);
+  doc.autoTable({
+    startY,
+    theme:'grid',
+    styles:{fontSize:7.5,cellPadding:3.5,lineColor:PDF_COLORS.border,lineWidth:0.3,overflow:'linebreak'},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontSize:7,fontStyle:'bold',cellPadding:2.5},
+    columnStyles:{0:{cellWidth:cw/2},1:{cellWidth:cw/2}},
+    head:[[
+      {content:left.header,styles:{halign:'left'}},
+      {content:right.header,styles:{halign:'left'}}
+    ]],
+    body:[[
+      {content:left.body,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
+      {content:right.body,styles:{valign:'top',textColor:PDF_COLORS.textDark}}
+    ]],
+    margin:{left:ml,right:ml}
+  });
+  return doc.lastAutoTable.finalY;
+}
+
+/* ═══════════════════════════════
+   GENERATE PI PDF
+═══════════════════════════════ */
+function generatePI(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const pw=210, ml=13;
+  const pi=DB.pi, sel=DB.seller, buy=DB.buyer;
+  const sub = calcSubtotal();
+  const total = sub + parseFloat(pi.freight||0);
+
+  let y = buildDocHeader(doc,'PROFORMA INVOICE','MD800 Series Variable Frequency Drive', DB);
+
+  // Info blocks row 1: Seller | Doc Info
+  const sellerBody = sel.name + '\n' + sel.address;
+  const docBody = `Doc No.: ${pi.docNo}\nDate: ${fmtDate(pi.date)}\nCurrency: ${pi.currency}`;
+  y = buildInfoBlock(doc, y, {header:'SELLER / EXPORTER',body:sellerBody},{header:'DOCUMENT INFO',body:docBody}) + 1;
+
+  // Info blocks row 2: Buyer | Terms
+  const buyerBody = buy.name + '\n' + buy.address;
+  const termsBody = `Payment: ${pi.payment}\nDelivery: ${pi.delivery}\nTrade: ${pi.trade}`;
+  y = buildInfoBlock(doc, y, {header:'BUYER / IMPORTER',body:buyerBody},{header:'TERMS',body:termsBody}) + 3;
+
+  // Product table
+  const cw = pw - 2*ml; // 184
+  const colWidths = [16,18,32,70,9,21,18]; // sum=184
+  const prodRows = DB.products.map(p=>[
+    p.power||'', p.func||'', p.model||'', p.description||'',
+    String(p.qty||0),
+    parseFloat(p.unitPrice||0).toFixed(2),
+    (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2)
+  ]);
+  prodRows.push([
+    {content:`FREIGHT (${pi.trade})`,colSpan:5,styles:{fontStyle:'bold',fillColor:PDF_COLORS.freightBg}},
+    '',
+    {content:parseFloat(pi.freight||0).toFixed(2),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.freightBg}}
+  ]);
+  prodRows.push([
+    {content:'TOTAL AMOUNT (Goods + DDP Freight)',colSpan:6,
+      styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:`USD ${total.toFixed(2)}`,
+      styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+  ]);
+
+  doc.autoTable({
+    startY:y,
+    theme:'grid',
+    head:[[
+      {content:'Power',styles:{halign:'center'}},
+      {content:'Function',styles:{halign:'center'}},
+      'Model',
+      'Description',
+      {content:'Qty',styles:{halign:'center'}},
+      {content:'Unit Price\n(USD)',styles:{halign:'right'}},
+      {content:'Amount\n(USD)',styles:{halign:'right'}}
+    ]],
+    body:prodRows,
+    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    columnStyles:{
+      0:{cellWidth:colWidths[0],halign:'center'},
+      1:{cellWidth:colWidths[1],halign:'center'},
+      2:{cellWidth:colWidths[2],font:'courier'},
+      3:{cellWidth:colWidths[3]},
+      4:{cellWidth:colWidths[4],halign:'center'},
+      5:{cellWidth:colWidths[5],halign:'right'},
+      6:{cellWidth:colWidths[6],halign:'right'}
+    },
+    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
+    rowPageBreak:'auto',
+    margin:{left:ml,right:ml}
+  });
+
+  y = doc.lastAutoTable.finalY + 6;
+
+  // Notes
+  if(pi.notes && pi.notes.length){
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold');
+    doc.setTextColor(...PDF_COLORS.textDark);
+    doc.text('NOTES & TERMS', ml, y);
+    y += 5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.setTextColor(...PDF_COLORS.textMid);
+    pi.notes.forEach((n,i)=>{
+      if(y > 270){ doc.addPage(); y=15; }
+      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
+      doc.text(lines, ml+1, y);
+      y += lines.length*4.5 + 1;
+    });
+    y += 3;
+  }
+
+  // Signature blocks
+  if(y > 255){ doc.addPage(); y=15; }
+  const sigW = (pw-2*ml)/2 - 5;
+  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
+  doc.rect(ml, y, sigW, 22); doc.rect(ml+sigW+10, y, sigW, 22);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER', ml+sigW/2, y+5, {align:'center'});
+  doc.text('BUYER', ml+sigW+10+sigW/2, y+5, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________', ml+3, y+13);
+  doc.text('Company Stamp:', ml+3, y+19);
+  doc.text('Authorized Signature: ___________________', ml+sigW+13, y+13);
+  doc.text('Company Stamp:', ml+sigW+13, y+19);
+
+  doc.save(`PI_${pi.docNo}_${pi.date||'draft'}.pdf`);
+  toast('PI PDF 已生成下载！','ok');
+}
+
+/* ═══════════════════════════════
+   GENERATE CI PDF
+═══════════════════════════════ */
+function generateCI(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const pw=210, ml=13;
+  const ci=DB.ci, sel=DB.seller, buy=DB.buyer;
+  const sub = calcSubtotal();
+  const total = sub + parseFloat(ci.freight||0);
+
+  let y = buildDocHeader(doc,'COMMERCIAL INVOICE','MD800 Series Variable Frequency Drive', DB);
+
+  // Seller | Doc Info
+  const sellerBody = sel.name + '\n' + sel.address;
+  const docBody = `Doc No.: ${ci.docNo}\nDate: ${fmtDate(ci.date)}\nCurrency: ${ci.currency}`;
+  y = buildInfoBlock(doc, y, {header:'SELLER / EXPORTER',body:sellerBody},{header:'DOCUMENT INFO',body:docBody}) + 1;
+
+  // Buyer | Terms
+  const buyerBody = buy.name + '\n' + buy.address;
+  const termsBody = `Payment: ${ci.payment}\nTrade: ${ci.trade}\nPort of Loading: ${ci.portOfLoading}\nPort of Discharge: ${ci.portOfDischarge}`;
+  y = buildInfoBlock(doc, y, {header:'BUYER / IMPORTER',body:buyerBody},{header:'SHIPMENT TERMS',body:termsBody}) + 3;
+
+  // Product table — CI columns
+  const cw = pw - 2*ml; // 184
+  // Desc(80) + HSCode(28) + Origin(22) + Qty(10) + UnitP(22) + Amt(22) = 184
+  const colW = [80,28,22,10,22,22];
+  const prodRows = DB.products.map(p=>[
+    p.description||'',
+    p.hsCode||'',
+    p.origin||'China',
+    String(p.qty||0),
+    parseFloat(p.unitPrice||0).toFixed(2),
+    (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2)
+  ]);
+  prodRows.push([
+    {content:`FREIGHT (${ci.trade})`,colSpan:4,styles:{fontStyle:'bold',fillColor:PDF_COLORS.freightBg}},
+    '',
+    {content:parseFloat(ci.freight||0).toFixed(2),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.freightBg}}
+  ]);
+  prodRows.push([
+    {content:'TOTAL AMOUNT',colSpan:5,styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:`USD ${total.toFixed(2)}`,styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+  ]);
+
+  doc.autoTable({
+    startY:y,
+    theme:'grid',
+    head:[['Description of Goods','HS Code','Country of\nOrigin',{content:'Qty',styles:{halign:'center'}},{content:'Unit Price\n(USD)',styles:{halign:'right'}},{content:'Amount\n(USD)',styles:{halign:'right'}}]],
+    body:prodRows,
+    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    columnStyles:{
+      0:{cellWidth:colW[0]},
+      1:{cellWidth:colW[1],halign:'center'},
+      2:{cellWidth:colW[2],halign:'center'},
+      3:{cellWidth:colW[3],halign:'center'},
+      4:{cellWidth:colW[4],halign:'right'},
+      5:{cellWidth:colW[5],halign:'right'}
+    },
+    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
+    margin:{left:ml,right:ml}
+  });
+
+  y = doc.lastAutoTable.finalY + 6;
+
+  // Notes
+  if(ci.notes && ci.notes.length){
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+    doc.text('NOTES & TERMS', ml, y);
+    y += 5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_COLORS.textMid);
+    ci.notes.forEach((n,i)=>{
+      if(y>270){doc.addPage();y=15;}
+      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
+      doc.text(lines, ml+1, y);
+      y += lines.length*4.5+1;
+    });
+    y += 3;
+  }
+
+  // Signatures
+  if(y>255){doc.addPage();y=15;}
+  const sigW = (pw-2*ml)/2 - 5;
+  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
+  doc.rect(ml,y,sigW,22); doc.rect(ml+sigW+10,y,sigW,22);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER',ml+sigW/2,y+5,{align:'center'});
+  doc.text('BUYER',ml+sigW+10+sigW/2,y+5,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________',ml+3,y+13);
+  doc.text('Company Stamp:',ml+3,y+19);
+  doc.text('Authorized Signature: ___________________',ml+sigW+13,y+13);
+  doc.text('Company Stamp:',ml+sigW+13,y+19);
+
+  doc.save(`CI_${ci.docNo}_${ci.date||'draft'}.pdf`);
+  toast('CI PDF 已生成下载！','ok');
+}
+
+/* ═══════════════════════════════
+   GENERATE PL PDF
+═══════════════════════════════ */
+function generatePL(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+  // Landscape: 297 x 210
+  const pw=297, ph=210, ml=13;
+  const pl=DB.pl, sel=DB.seller, buy=DB.buyer;
+
+  let y = 0;
+  // Title bar
+  doc.setFillColor(...PDF_COLORS.headerBg);
+  doc.rect(0,0,pw,18,'F');
+  doc.setFontSize(15); doc.setFont('helvetica','bold');
+  doc.setTextColor(...PDF_COLORS.headerText);
+  doc.text('PACKING LIST', pw/2, 11, {align:'center'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.setTextColor(200,185,140);
+  doc.text('MD800 Series Variable Frequency Drive', pw/2, 16, {align:'center'});
+  y = 21;
+
+  // Info block (landscape, 4 columns)
+  const cw4 = (pw-2*ml)/4;
+  doc.autoTable({
+    startY:y,
+    theme:'grid',
+    styles:{fontSize:7.5,cellPadding:3,lineColor:PDF_COLORS.border,lineWidth:0.3,overflow:'linebreak'},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontSize:7,fontStyle:'bold',cellPadding:2.5},
+    columnStyles:{0:{cellWidth:cw4},1:{cellWidth:cw4},2:{cellWidth:cw4},3:{cellWidth:cw4}},
+    head:[[
+      {content:'SELLER / EXPORTER',styles:{halign:'left'}},
+      {content:'BUYER / IMPORTER',styles:{halign:'left'}},
+      {content:'DOCUMENT INFO',styles:{halign:'left'}},
+      {content:'SHIPMENT INFO',styles:{halign:'left'}}
+    ]],
+    body:[[
+      {content:sel.name+'\n'+sel.address,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
+      {content:buy.name+'\n'+buy.address,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
+      {content:`Doc No.: ${pl.docNo}\nDate: ${fmtDate(pl.date)}\nMarks: ${pl.marks}`,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
+      {content:`Port of Loading: ${pl.portOfLoading}\nPort of Discharge: ${pl.portOfDischarge}\nTotal Cartons: ${pl.totalCartons}`,styles:{valign:'top',textColor:PDF_COLORS.textDark}}
+    ]],
+    margin:{left:ml,right:ml}
+  });
+  y = doc.lastAutoTable.finalY + 3;
+
+  // Packing table
+  // Model(30)+Desc(75)+CartonNo(20)+Qty(18)+NetWt(25)+GrossWt(25)+Dims(30)+CBM(25) = 248 = 297-49(margins+extra) hmm
+  // pw-2*ml = 297-26 = 271
+  const colW = [30,75,18,14,25,25,35,25]; // sum=247... close enough with margins
+  let totalNet=0, totalGross=0, totalCBM=0, totalQty=0;
+  const prodRows = DB.products.map(p=>{
+    const cbm = (parseFloat(p.length||0)*parseFloat(p.width||0)*parseFloat(p.height||0))/1000000;
+    totalNet += parseFloat(p.netWeight||0);
+    totalGross += parseFloat(p.grossWeight||0);
+    totalCBM += cbm;
+    totalQty += parseFloat(p.qty||0);
+    return [
+      p.model||'', p.description||'', p.cartonNo||'',
+      String(p.qty||0),
+      parseFloat(p.netWeight||0).toFixed(3),
+      parseFloat(p.grossWeight||0).toFixed(3),
+      `${p.length||0}×${p.width||0}×${p.height||0}`,
+      cbm.toFixed(4)
+    ];
+  });
+  // Total row
+  prodRows.push([
+    {content:'TOTAL',colSpan:3,styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:String(totalQty),styles:{fontStyle:'bold',halign:'center',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:totalNet.toFixed(3),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:totalGross.toFixed(3),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
+    {content:'',styles:{fillColor:PDF_COLORS.totalBg}},
+    {content:totalCBM.toFixed(4),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+  ]);
+
+  doc.autoTable({
+    startY:y,
+    theme:'grid',
+    head:[[
+      'Model',
+      'Description',
+      {content:'Carton No.',styles:{halign:'center'}},
+      {content:'Qty\n(pcs)',styles:{halign:'center'}},
+      {content:'Net Wt\n(kg)',styles:{halign:'right'}},
+      {content:'Gross Wt\n(kg)',styles:{halign:'right'}},
+      {content:'L×W×H\n(cm)',styles:{halign:'center'}},
+      {content:'CBM\n(m³)',styles:{halign:'right'}}
+    ]],
+    body:prodRows,
+    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    columnStyles:{
+      0:{cellWidth:colW[0]},
+      1:{cellWidth:colW[1]},
+      2:{cellWidth:colW[2],halign:'center'},
+      3:{cellWidth:colW[3],halign:'center'},
+      4:{cellWidth:colW[4],halign:'right'},
+      5:{cellWidth:colW[5],halign:'right'},
+      6:{cellWidth:colW[6],halign:'center'},
+      7:{cellWidth:colW[7],halign:'right'}
+    },
+    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
+    margin:{left:ml,right:ml}
+  });
+
+  y = doc.lastAutoTable.finalY + 5;
+
+  // Notes
+  if(pl.notes && pl.notes.length){
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+    doc.text('NOTES', ml, y); y += 4;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_COLORS.textMid);
+    pl.notes.forEach((n,i)=>{
+      if(y>200){doc.addPage();y=15;}
+      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml);
+      doc.text(lines,ml,y); y += lines.length*4.5+1;
+    });
+    y += 2;
+  }
+
+  // Signatures
+  if(y>190){doc.addPage();y=15;}
+  const sigW2 = (pw-2*ml)/2 - 10;
+  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
+  doc.rect(ml,y,sigW2,20); doc.rect(ml+sigW2+20,y,sigW2,20);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER',ml+sigW2/2,y+5,{align:'center'});
+  doc.text('BUYER',ml+sigW2+20+sigW2/2,y+5,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________',ml+3,y+12);
+  doc.text('Company Stamp:',ml+3,y+18);
+  doc.text('Authorized Signature: ___________________',ml+sigW2+23,y+12);
+  doc.text('Company Stamp:',ml+sigW2+23,y+18);
+
+  doc.save(`PL_${pl.docNo}_${pl.date||'draft'}.pdf`);
+  toast('PL PDF 已生成下载！','ok');
+}
+
+/* ═══════════════════════════════
+   INIT
+═══════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  loadDB();
+  renderAll();
+});
+</script>
+</body>
+</html>
