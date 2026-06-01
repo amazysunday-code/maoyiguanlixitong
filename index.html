@@ -106,7 +106,12 @@ textarea.inp{resize:vertical;min-height:54px}
 /* PRODUCT TABLE */
 .tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border2);margin-bottom:12px}
 .tbl{width:100%;border-collapse:collapse;font-size:12px}
-.tbl thead th{background:var(--bg4);padding:9px 8px;text-align:left;font-size:10px;font-weight:700;
+.tbl thead th[contenteditable]{cursor:text;outline:none;border-radius:3px;transition:background .14s}
+.tbl thead th[contenteditable]:hover{background:var(--bg3)}
+.tbl thead th[contenteditable]:focus{background:var(--gold-dim);box-shadow:0 0 0 1px var(--gold);color:var(--gold-lt)}
+.tbl thead th .edit-hint{font-size:8px;color:var(--text-dim);font-weight:400;margin-left:4px;opacity:0;transition:opacity .14s;letter-spacing:.02em}
+.tbl thead th[contenteditable]:hover .edit-hint{opacity:1}
+
   color:var(--text-mid);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border2);
   white-space:nowrap}
 .tbl thead th.center{text-align:center}
@@ -288,13 +293,13 @@ textarea.inp{resize:vertical;min-height:54px}
             <tr>
               <th style="width:28px"></th>
               <th style="width:18px" class="center">#</th>
-              <th style="width:68px">Power</th>
-              <th style="width:72px">Function</th>
-              <th style="width:130px">Model</th>
-              <th>Description</th>
-              <th style="width:46px" class="center">Qty</th>
-              <th style="width:88px">Unit Price (USD)</th>
-              <th style="width:88px">Amount (USD)</th>
+              <th id="pih0" style="width:68px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',0,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih1" style="width:72px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',1,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih2" style="width:130px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',2,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih3" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',3,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih4" style="width:46px" class="center" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',4,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih5" style="width:88px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',5,this)" onblur="cleanColHeader(this)"></th>
+              <th id="pih6" style="width:88px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pi',6,this)" onblur="cleanColHeader(this)"></th>
               <th style="width:32px"></th>
             </tr>
           </thead>
@@ -375,12 +380,12 @@ textarea.inp{resize:vertical;min-height:54px}
             <tr>
               <th style="width:28px"></th>
               <th style="width:18px" class="center">#</th>
-              <th>Description of Goods</th>
-              <th style="width:110px">HS Code</th>
-              <th style="width:90px">Country of Origin</th>
-              <th style="width:46px" class="center">Qty</th>
-              <th style="width:90px">Unit Price (USD)</th>
-              <th style="width:90px">Amount (USD)</th>
+              <th id="cih0" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',0,this)" onblur="cleanColHeader(this)"></th>
+              <th id="cih1" style="width:110px" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',1,this)" onblur="cleanColHeader(this)"></th>
+              <th id="cih2" style="width:90px" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',2,this)" onblur="cleanColHeader(this)"></th>
+              <th id="cih3" style="width:46px" class="center" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',3,this)" onblur="cleanColHeader(this)"></th>
+              <th id="cih4" style="width:90px" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',4,this)" onblur="cleanColHeader(this)"></th>
+              <th id="cih5" style="width:90px" contenteditable="true" spellcheck="false" oninput="saveColHeader('ci',5,this)" onblur="cleanColHeader(this)"></th>
               <th style="width:32px"></th>
             </tr>
           </thead>
@@ -451,13 +456,13 @@ textarea.inp{resize:vertical;min-height:54px}
             <tr>
               <th style="width:28px"></th>
               <th style="width:18px" class="center">#</th>
-              <th style="width:120px">Model</th>
-              <th>Description</th>
-              <th style="width:70px">Carton No.</th>
-              <th style="width:56px" class="center">Qty (pcs)</th>
-              <th style="width:82px">Net Wt (kg)</th>
-              <th style="width:82px">Gross Wt (kg)</th>
-              <th style="width:110px">L×W×H (cm)</th>
+              <th id="plh0" style="width:120px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',0,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh1" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',1,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh2" style="width:70px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',2,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh3" style="width:56px" class="center" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',3,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh4" style="width:82px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',4,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh5" style="width:82px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',5,this)" onblur="cleanColHeader(this)"></th>
+              <th id="plh6" style="width:110px" contenteditable="true" spellcheck="false" oninput="saveColHeader('pl',6,this)" onblur="cleanColHeader(this)"></th>
               <th style="width:32px"></th>
             </tr>
           </thead>
@@ -515,6 +520,11 @@ const DEFAULT_DB = {
   buyer:{
     name:'GTECH CO.,LTD',
     address:'25-28, SINCHEOK 1-GIL, DEOKSAN-MYEON, JINCHEON-GUN, CHUNGCHEONGBUK-DO, KOREA'
+  },
+  colHeaders:{
+    pi:  ['Power','Function','Model','Description','Qty','Unit Price (USD)','Amount (USD)'],
+    ci:  ['Description of Goods','HS Code','Country of Origin','Qty','Unit Price (USD)','Amount (USD)'],
+    pl:  ['Model','Description','Carton No.','Qty (pcs)','Net Wt (kg)','Gross Wt (kg)','L×W×H (cm)']
   },
   pi:{
     docNo:'PL-MD800-2026-001', date:'2026-05-15', currency:'USD',
@@ -613,8 +623,37 @@ function toast(msg, type='ok'){
 }
 
 /* ═══════════════════════════════
-   SAVE / LOAD
+   COLUMN HEADER EDIT
 ═══════════════════════════════ */
+function renderColHeaders(){
+  if(!DB.colHeaders) DB.colHeaders = JSON.parse(JSON.stringify(DEFAULT_DB.colHeaders));
+  const map = {
+    pi:  ['pih0','pih1','pih2','pih3','pih4','pih5','pih6'],
+    ci:  ['cih0','cih1','cih2','cih3','cih4','cih5'],
+    pl:  ['plh0','plh1','plh2','plh3','plh4','plh5','plh6']
+  };
+  ['pi','ci','pl'].forEach(tab=>{
+    const headers = DB.colHeaders[tab];
+    map[tab].forEach((id,i)=>{
+      const el = document.getElementById(id);
+      if(el && headers[i] !== undefined) el.textContent = headers[i];
+    });
+  });
+}
+function saveColHeader(tab, idx, el){
+  if(!DB.colHeaders) DB.colHeaders = JSON.parse(JSON.stringify(DEFAULT_DB.colHeaders));
+  DB.colHeaders[tab][idx] = el.textContent.trim();
+}
+function cleanColHeader(el){
+  // prevent empty — restore default if blank
+  if(!el.textContent.trim()){
+    const tab = el.id.slice(0,2)==='pl'?'pl': el.id.slice(0,2)==='ci'?'ci':'pi';
+    const idx = parseInt(el.id.slice(-1));
+    el.textContent = DEFAULT_DB.colHeaders[tab][idx];
+    DB.colHeaders[tab][idx] = el.textContent;
+  }
+}
+
 function saveDB(){
   try{ localStorage.setItem('tradeDocDB', JSON.stringify(DB)); toast('已保存到本地浏览器','ok'); }
   catch(e){ toast('保存失败: '+e.message,'err'); }
@@ -623,6 +662,7 @@ function loadDB(){
   try{
     const raw = localStorage.getItem('tradeDocDB');
     if(raw){ DB = JSON.parse(raw); }
+    if(!DB.colHeaders) DB.colHeaders = JSON.parse(JSON.stringify(DEFAULT_DB.colHeaders));
   }catch(e){ console.warn('Load failed',e); }
 }
 function resetDB(){
@@ -647,6 +687,7 @@ function switchTab(tab){
    RENDER ALL
 ═══════════════════════════════ */
 function renderAll(){
+  renderColHeaders();
   // Common
   setVal('sellerName', DB.seller.name);
   setVal('sellerAddr', DB.seller.address);
@@ -1025,17 +1066,17 @@ function generatePI(){
     startY:y,
     theme:'grid',
     head:[[
-      {content:'Power',styles:{halign:'center'}},
-      {content:'Function',styles:{halign:'center'}},
-      'Model',
-      'Description',
-      {content:'Qty',styles:{halign:'center'}},
-      {content:'Unit Price\n(USD)',styles:{halign:'right'}},
-      {content:'Amount\n(USD)',styles:{halign:'right'}}
+      {content: (DB.colHeaders&&DB.colHeaders.pi[0])||'Power',       styles:{halign:'center'}},
+      {content: (DB.colHeaders&&DB.colHeaders.pi[1])||'Function',    styles:{halign:'center'}},
+      (DB.colHeaders&&DB.colHeaders.pi[2])||'Model',
+      (DB.colHeaders&&DB.colHeaders.pi[3])||'Description',
+      {content: (DB.colHeaders&&DB.colHeaders.pi[4])||'Qty',         styles:{halign:'center'}},
+      {content: (DB.colHeaders&&DB.colHeaders.pi[5])||'Unit Price\n(USD)', styles:{halign:'right'}},
+      {content: (DB.colHeaders&&DB.colHeaders.pi[6])||'Amount\n(USD)',     styles:{halign:'right'}}
     ]],
     body:prodRows,
-    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
     columnStyles:{
       0:{cellWidth:colWidths[0],halign:'center'},
       1:{cellWidth:colWidths[1],halign:'center'},
@@ -1046,7 +1087,8 @@ function generatePI(){
       6:{cellWidth:colWidths[6],halign:'right'}
     },
     alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
-    rowPageBreak:'auto',
+    rowPageBreak:'avoid',
+    pageBreak:'avoid',
     margin:{left:ml,right:ml}
   });
 
@@ -1054,34 +1096,34 @@ function generatePI(){
 
   // Notes
   if(pi.notes && pi.notes.length){
-    doc.setFontSize(8.5); doc.setFont('helvetica','bold');
+    doc.setFontSize(7.5); doc.setFont('helvetica','bold');
     doc.setTextColor(...PDF_COLORS.textDark);
     doc.text('NOTES & TERMS', ml, y);
-    y += 5;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    y += 4;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7);
     doc.setTextColor(...PDF_COLORS.textMid);
     pi.notes.forEach((n,i)=>{
-      if(y > 270){ doc.addPage(); y=15; }
+      if(y > 282){ doc.addPage(); y=15; }
       const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
       doc.text(lines, ml+1, y);
-      y += lines.length*4.5 + 1;
+      y += lines.length*4 + 0.8;
     });
-    y += 3;
+    y += 2;
   }
 
   // Signature blocks
-  if(y > 255){ doc.addPage(); y=15; }
+  if(y > 268){ doc.addPage(); y=15; }
   const sigW = (pw-2*ml)/2 - 5;
   doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml, y, sigW, 22); doc.rect(ml+sigW+10, y, sigW, 22);
-  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER', ml+sigW/2, y+5, {align:'center'});
-  doc.text('BUYER', ml+sigW+10+sigW/2, y+5, {align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________', ml+3, y+13);
-  doc.text('Company Stamp:', ml+3, y+19);
-  doc.text('Authorized Signature: ___________________', ml+sigW+13, y+13);
-  doc.text('Company Stamp:', ml+sigW+13, y+19);
+  doc.rect(ml, y, sigW, 18); doc.rect(ml+sigW+10, y, sigW, 18);
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER', ml+sigW/2, y+4.5, {align:'center'});
+  doc.text('BUYER', ml+sigW+10+sigW/2, y+4.5, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________', ml+3, y+10);
+  doc.text('Company Stamp:', ml+3, y+15);
+  doc.text('Authorized Signature: ___________________', ml+sigW+13, y+10);
+  doc.text('Company Stamp:', ml+sigW+13, y+15);
 
   doc.save(`PI_${pi.docNo}_${pi.date||'draft'}.pdf`);
   toast('PI PDF 已生成下载！','ok');
@@ -1135,10 +1177,15 @@ function generateCI(){
   doc.autoTable({
     startY:y,
     theme:'grid',
-    head:[['Description of Goods','HS Code','Country of\nOrigin',{content:'Qty',styles:{halign:'center'}},{content:'Unit Price\n(USD)',styles:{halign:'right'}},{content:'Amount\n(USD)',styles:{halign:'right'}}]],
+    head:[[(DB.colHeaders&&DB.colHeaders.ci[0])||'Description of Goods',
+           (DB.colHeaders&&DB.colHeaders.ci[1])||'HS Code',
+           (DB.colHeaders&&DB.colHeaders.ci[2])||'Country of\nOrigin',
+           {content:(DB.colHeaders&&DB.colHeaders.ci[3])||'Qty',styles:{halign:'center'}},
+           {content:(DB.colHeaders&&DB.colHeaders.ci[4])||'Unit Price\n(USD)',styles:{halign:'right'}},
+           {content:(DB.colHeaders&&DB.colHeaders.ci[5])||'Amount\n(USD)',styles:{halign:'right'}}]],
     body:prodRows,
-    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
     columnStyles:{
       0:{cellWidth:colW[0]},
       1:{cellWidth:colW[1],halign:'center'},
@@ -1148,39 +1195,41 @@ function generateCI(){
       5:{cellWidth:colW[5],halign:'right'}
     },
     alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
+    rowPageBreak:'avoid',
+    pageBreak:'avoid',
     margin:{left:ml,right:ml}
   });
 
-  y = doc.lastAutoTable.finalY + 6;
+  y = doc.lastAutoTable.finalY + 4;
 
   // Notes
   if(ci.notes && ci.notes.length){
-    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+    doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
     doc.text('NOTES & TERMS', ml, y);
-    y += 5;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_COLORS.textMid);
+    y += 4;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
     ci.notes.forEach((n,i)=>{
-      if(y>270){doc.addPage();y=15;}
+      if(y>282){doc.addPage();y=15;}
       const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
       doc.text(lines, ml+1, y);
-      y += lines.length*4.5+1;
+      y += lines.length*4+0.8;
     });
-    y += 3;
+    y += 2;
   }
 
   // Signatures
-  if(y>255){doc.addPage();y=15;}
+  if(y>268){doc.addPage();y=15;}
   const sigW = (pw-2*ml)/2 - 5;
   doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml,y,sigW,22); doc.rect(ml+sigW+10,y,sigW,22);
-  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER',ml+sigW/2,y+5,{align:'center'});
-  doc.text('BUYER',ml+sigW+10+sigW/2,y+5,{align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________',ml+3,y+13);
-  doc.text('Company Stamp:',ml+3,y+19);
-  doc.text('Authorized Signature: ___________________',ml+sigW+13,y+13);
-  doc.text('Company Stamp:',ml+sigW+13,y+19);
+  doc.rect(ml,y,sigW,18); doc.rect(ml+sigW+10,y,sigW,18);
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER',ml+sigW/2,y+4.5,{align:'center'});
+  doc.text('BUYER',ml+sigW+10+sigW/2,y+4.5,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________',ml+3,y+10);
+  doc.text('Company Stamp:',ml+3,y+15);
+  doc.text('Authorized Signature: ___________________',ml+sigW+13,y+10);
+  doc.text('Company Stamp:',ml+sigW+13,y+15);
 
   doc.save(`CI_${ci.docNo}_${ci.date||'draft'}.pdf`);
   toast('CI PDF 已生成下载！','ok');
@@ -1266,18 +1315,18 @@ function generatePL(){
     startY:y,
     theme:'grid',
     head:[[
-      'Model',
-      'Description',
-      {content:'Carton No.',styles:{halign:'center'}},
-      {content:'Qty\n(pcs)',styles:{halign:'center'}},
-      {content:'Net Wt\n(kg)',styles:{halign:'right'}},
-      {content:'Gross Wt\n(kg)',styles:{halign:'right'}},
-      {content:'L×W×H\n(cm)',styles:{halign:'center'}},
+      (DB.colHeaders&&DB.colHeaders.pl[0])||'Model',
+      (DB.colHeaders&&DB.colHeaders.pl[1])||'Description',
+      {content:(DB.colHeaders&&DB.colHeaders.pl[2])||'Carton No.',styles:{halign:'center'}},
+      {content:(DB.colHeaders&&DB.colHeaders.pl[3])||'Qty\n(pcs)',styles:{halign:'center'}},
+      {content:(DB.colHeaders&&DB.colHeaders.pl[4])||'Net Wt\n(kg)',styles:{halign:'right'}},
+      {content:(DB.colHeaders&&DB.colHeaders.pl[5])||'Gross Wt\n(kg)',styles:{halign:'right'}},
+      {content:(DB.colHeaders&&DB.colHeaders.pl[6])||'L×W×H\n(cm)',styles:{halign:'center'}},
       {content:'CBM\n(m³)',styles:{halign:'right'}}
     ]],
     body:prodRows,
-    styles:{fontSize:7.5,cellPadding:2.5,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:7,cellPadding:3},
+    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
+    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
     columnStyles:{
       0:{cellWidth:colW[0]},
       1:{cellWidth:colW[1]},
@@ -1289,37 +1338,39 @@ function generatePL(){
       7:{cellWidth:colW[7],halign:'right'}
     },
     alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
+    rowPageBreak:'avoid',
+    pageBreak:'avoid',
     margin:{left:ml,right:ml}
   });
 
-  y = doc.lastAutoTable.finalY + 5;
+  y = doc.lastAutoTable.finalY + 4;
 
   // Notes
   if(pl.notes && pl.notes.length){
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+    doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
     doc.text('NOTES', ml, y); y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...PDF_COLORS.textMid);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
     pl.notes.forEach((n,i)=>{
-      if(y>200){doc.addPage();y=15;}
+      if(y>202){doc.addPage();y=15;}
       const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml);
-      doc.text(lines,ml,y); y += lines.length*4.5+1;
+      doc.text(lines,ml,y); y += lines.length*4+0.8;
     });
     y += 2;
   }
 
   // Signatures
-  if(y>190){doc.addPage();y=15;}
+  if(y>195){doc.addPage();y=15;}
   const sigW2 = (pw-2*ml)/2 - 10;
   doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml,y,sigW2,20); doc.rect(ml+sigW2+20,y,sigW2,20);
-  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER',ml+sigW2/2,y+5,{align:'center'});
-  doc.text('BUYER',ml+sigW2+20+sigW2/2,y+5,{align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________',ml+3,y+12);
-  doc.text('Company Stamp:',ml+3,y+18);
-  doc.text('Authorized Signature: ___________________',ml+sigW2+23,y+12);
-  doc.text('Company Stamp:',ml+sigW2+23,y+18);
+  doc.rect(ml,y,sigW2,18); doc.rect(ml+sigW2+20,y,sigW2,18);
+  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
+  doc.text('SELLER',ml+sigW2/2,y+4.5,{align:'center'});
+  doc.text('BUYER',ml+sigW2+20+sigW2/2,y+4.5,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
+  doc.text('Authorized Signature: ___________________',ml+3,y+10);
+  doc.text('Company Stamp:',ml+3,y+15);
+  doc.text('Authorized Signature: ___________________',ml+sigW2+23,y+10);
+  doc.text('Company Stamp:',ml+sigW2+23,y+15);
 
   doc.save(`PL_${pl.docNo}_${pl.date||'draft'}.pdf`);
   toast('PL PDF 已生成下载！','ok');
