@@ -218,7 +218,7 @@ textarea.inp{resize:vertical;min-height:54px}
         <div class="form-grid" style="gap:8px">
           <div class="form-group">
             <label>Company Name 公司名称</label>
-            <input class="inp" id="sellerName" placeholder="CHANGSHU DETE TRADING CO.,LTD" oninput="DB.seller.name=this.value">
+            <input class="inp" id="sellerName" placeholder="CHANGSHU DETE TRADING CO., LTD" oninput="DB.seller.name=this.value">
           </div>
           <div class="form-group">
             <label>Address 地址</label>
@@ -238,6 +238,37 @@ textarea.inp{resize:vertical;min-height:54px}
             <textarea class="inp" id="buyerAddr" rows="2" placeholder="25-28, SINCHEOK 1-GIL..." oninput="DB.buyer.address=this.value"></textarea>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMON: BANK ACCOUNT -->
+  <div class="panel">
+    <div class="panel-title">🏦 收款信息 BANK ACCOUNT</div>
+    <div id="bankSection" class="form-grid form-grid-4" style="display:grid !important" style="gap:10px">
+      <div class="form-group">
+        <label>Beneficiary Bank 受益银行</label>
+        <input class="inp" id="bankName" placeholder="CHANGSHU RURAL COMMERCIAL BANK" oninput="DB.bank.bankName=this.value">
+      </div>
+      <div class="form-group">
+        <label>Account Holder Name 账户持有人</label>
+        <input class="inp" id="bankAccountName" placeholder="CHANGSHU DETE TRADING CO., LTD" oninput="DB.bank.accountName=this.value">
+      </div>
+      <div class="form-group">
+        <label>Account number 账号</label>
+        <input class="inp mono" id="bankAccountNo" placeholder="101277114021936666" oninput="DB.bank.accountNo=this.value">
+      </div>
+      <div class="form-group">
+        <label>Collection Currency 收款币种</label>
+        <input class="inp" id="bankCurrency" placeholder="USD" oninput="DB.bank.currency=this.value">
+      </div>
+      <div class="form-group">
+        <label>SWIFT / BIC</label>
+        <input class="inp mono" id="bankSwift" placeholder="CSCBCNSHXXX" oninput="DB.bank.swiftCode=this.value">
+      </div>
+      <div class="form-group full">
+        <label>Payment address 付款地址</label>
+        <textarea class="inp" id="bankAddr" rows="1" placeholder="Bank address..." oninput="DB.bank.bankAddress=this.value"></textarea>
       </div>
     </div>
   </div>
@@ -513,6 +544,14 @@ textarea.inp{resize:vertical;min-height:54px}
    DEFAULT DATA
 ═══════════════════════════════ */
 const DEFAULT_DB = {
+  bank:{
+    bankName:'CHANGSHU RURAL COMMERCIAL BANK',
+    accountName:'CHANGSHU DETE TRADING CO.,LTD',
+    accountNo:'101277114021936666',
+    swiftCode:'CSCBCNSHXXX',
+    bankAddress:'NO.58 XINSHIJI DADAO, CHANGSHU, JIANGSU, CHINA',
+    currency:'USD'
+  },
   seller:{
     name:'CHANGSHU DETE TRADING CO.,LTD',
     address:'NO.8 KAICHENG ROAD ZHITANG TOWN, CHANGSHU CITY, JIANGSU PROVINCE'
@@ -667,6 +706,7 @@ function loadDB(){
     const raw = localStorage.getItem('tradeDocDB');
     if(raw){ DB = JSON.parse(raw); }
     if(!DB.colHeaders) DB.colHeaders = JSON.parse(JSON.stringify(DEFAULT_DB.colHeaders));
+    if(!DB.bank) DB.bank = JSON.parse(JSON.stringify(DEFAULT_DB.bank));
   }catch(e){ console.warn('Load failed',e); }
 }
 function resetDB(){
@@ -676,6 +716,7 @@ function resetDB(){
   renderAll();
   toast('已重置为默认数据','info');
 }
+
 
 /* ═══════════════════════════════
    TAB SWITCH
@@ -697,6 +738,13 @@ function renderAll(){
   setVal('sellerAddr', DB.seller.address);
   setVal('buyerName', DB.buyer.name);
   setVal('buyerAddr', DB.buyer.address);
+  // Bank
+  setVal('bankName', DB.bank.bankName);
+  setVal('bankAccountName', DB.bank.accountName);
+  setVal('bankAccountNo', DB.bank.accountNo);
+  setVal('bankCurrency', DB.bank.currency);
+  setVal('bankSwift', DB.bank.swiftCode);
+  setVal('bankAddr', DB.bank.bankAddress);
   // PI
   setVal('piDocNo', DB.pi.docNo);
   setVal('piDate', DB.pi.date);
@@ -995,29 +1043,31 @@ const PDF_CLR = {
 /* ── 绘制顶部大标题块 ── */
 function drawTitleBlock(doc, mainTitle) {
   const pw = doc.internal.pageSize.getWidth();
-  const ml = 12; // 与内容区边距一致
-  const blockH = 26; // 标题块高度（去掉副标题后减小）
+  const ml = 14; // 左边距略增大
+  const topPad = 14; // 顶部留白增大
+  const blockH = 28; // 标题块高度略增
+  const botPad = 12; // 底部留白增大
 
-  // 深蓝色背景 - 与内容区对齐，两侧留白
+  // 深蓝色背景 - 与内容区对齐，四边留白
   doc.setFillColor(...PDF_CLR.navy);
-  doc.rect(ml, 0, pw - 2 * ml, blockH, 'F');
+  doc.rect(ml, topPad, pw - 2 * ml, blockH, 'F');
 
-  // 主标题 - 白色粗体居中
-  doc.setFontSize(22);
+  // 主标题 - 白色粗体，在块内垂直居中
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PDF_CLR.white);
-  doc.text(mainTitle, pw / 2, 17, { align: 'center' });
+  doc.text(mainTitle, pw / 2, topPad + blockH / 2 + 4, { align: 'center' });
 
-  return blockH + 6; // 返回下方起始Y坐标，增加留白
+  return topPad + blockH + botPad;
 }
 
-function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody) {
+function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody, bodyH) {
   const pw = doc.internal.pageSize.getWidth();
-  const ml = 12; // 左边距
-  const gap = 8; // 两栏间距
+  const ml = 14; // 左边距增大
+  const gap = 10; // 两栏间距增大
   const colW = (pw - 2 * ml - gap) / 2;
-  const headerH = 6;
-  const bodyH = 22;
+  const headerH = 7;
+  if(bodyH === undefined) bodyH = 26; // 默认高度增大
 
   // 左栏标题条
   doc.setFillColor(...PDF_CLR.grayHeader);
@@ -1025,7 +1075,7 @@ function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PDF_CLR.black);
-  doc.text(leftTitle, ml + 2, startY + 4.5);
+  doc.text(leftTitle, ml + 2, startY + 5);
 
   // 左栏内容区
   doc.setDrawColor(...PDF_CLR.grayBorder);
@@ -1044,7 +1094,7 @@ function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...PDF_CLR.black);
-  doc.text(rightTitle, rightX + 2, startY + 4.5);
+  doc.text(rightTitle, rightX + 2, startY + 5);
 
   // 右栏内容区
   doc.rect(rightX, startY + headerH, colW, bodyH);
@@ -1054,38 +1104,38 @@ function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody
   const rightLines = doc.splitTextToSize(rightBody, colW - 4);
   doc.text(rightLines, rightX + 2, startY + headerH + 5);
 
-  return startY + headerH + bodyH + 2;
+  return startY + headerH + bodyH + 4; // 间距增大
 }
 
 /* ── 绘制分隔线 ── */
 function drawSeparatorLine(doc, y) {
   const pw = doc.internal.pageSize.getWidth();
-  const ml = 12;
+  const ml = 14;
   doc.setDrawColor(...PDF_CLR.navy);
   doc.setLineWidth(1.5);
   doc.line(ml, y, pw - ml, y);
-  return y + 4;
+  return y + 6; // 间距增大
 }
 
 /* ── 绘制页脚 ── */
 function drawFooter(doc, docName, pageNum, totalPages) {
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
-  const ml = 12;
+  const ml = 14;
 
   // 底部细线
   doc.setDrawColor(...PDF_CLR.grayBorder);
   doc.setLineWidth(0.3);
-  doc.line(ml, ph - 10, pw - ml, ph - 10);
+  doc.line(ml, ph - 12, pw - ml, ph - 12);
 
   // 左下角文档名
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...PDF_CLR.grayText);
-  doc.text(docName, ml, ph - 5);
+  doc.text(docName, ml, ph - 6);
 
   // 右下角页码
-  doc.text(`${pageNum} / ${totalPages}`, pw - ml, ph - 5, { align: 'right' });
+  doc.text(`${pageNum} / ${totalPages}`, pw - ml, ph - 6, { align: 'right' });
 }
 
 /* ═══════════════════════════════
@@ -1094,8 +1144,8 @@ function drawFooter(doc, docName, pageNum, totalPages) {
 function generatePI() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const pw = 210, ml = 12;
-  const pi = DB.pi, sel = DB.seller, buy = DB.buyer;
+  const pw = 210, ml = 14;
+  const pi = DB.pi, sel = DB.seller, buy = DB.buyer, bank = DB.bank;
   const sub = calcSubtotal();
   const total = sub + parseFloat(pi.freight || 0);
 
@@ -1117,7 +1167,7 @@ function generatePI() {
   y = drawSeparatorLine(doc, y);
 
   // 产品表格
-  const colW = [16, 20, 34, 66, 12, 24, 22]; // 194mm total
+  const colW = [16, 18, 30, 62, 12, 22, 22]; // 180mm <= pw - 2*ml (182mm)
   const headers = [
     { content: (DB.colHeaders && DB.colHeaders.pi[0]) || 'Power', styles: { halign: 'center' } },
     { content: (DB.colHeaders && DB.colHeaders.pi[1]) || 'Function', styles: { halign: 'center' } },
@@ -1142,7 +1192,7 @@ function generatePI() {
   // 特殊行 - connectors（如果有）
   // 运费行
   prodRows.push([
-    { content: `FREIGHT  (${pi.trade})`, colSpan: 6, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow } },
+    { content: `FREIGHT  (${pi.trade})`, colSpan: 6, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow, halign: 'left' } },
     { content: `USD ${parseFloat(pi.freight || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.grayRow, textColor: PDF_CLR.gold } }
   ]);
@@ -1150,7 +1200,7 @@ function generatePI() {
   // 总计行
   prodRows.push([
     { content: 'TOTAL AMOUNT (Goods + DDP Freight)', colSpan: 6,
-      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white, halign: 'left' } },
     { content: `USD ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.gold } }
   ]);
@@ -1198,22 +1248,22 @@ function generatePI() {
 
   // 备注区域
   if (pi.notes && pi.notes.length) {
-    if (y > 235) { doc.addPage(); y = 15; }
+    if (y > 230) { doc.addPage(); y = 15; }
 
     // 备注标题条
     const noteW = pw - 2 * ml;
     doc.setFillColor(...PDF_CLR.grayHeader);
-    doc.rect(ml, y, noteW, 6, 'F');
+    doc.rect(ml, y, noteW, 7, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...PDF_CLR.black);
-    doc.text('NOTES & TERMS', ml + 2, y + 4.5);
+    doc.text('NOTES & TERMS', ml + 2, y + 5);
 
     // 备注内容边框
-    let noteH = pi.notes.length * 5 + 4;
+    let noteH = pi.notes.length * 6 + 4;
     doc.setDrawColor(...PDF_CLR.grayBorder);
     doc.setLineWidth(0.3);
-    doc.rect(ml, y + 6, noteW, noteH);
+    doc.rect(ml, y + 7, noteW, noteH);
 
     // 备注内容
     doc.setFontSize(8.5);
@@ -1222,14 +1272,59 @@ function generatePI() {
     pi.notes.forEach((n, i) => {
       const noteText = `${i + 1}.    ${n}`;
       const lines = doc.splitTextToSize(noteText, noteW - 6);
-      doc.text(lines, ml + 3, y + 11 + i * 5);
+      doc.text(lines, ml + 3, y + 12.5 + i * 6);
     });
 
-    y = y + 6 + noteH + 5;
+    y = y + 7 + noteH + 6;
+  }
+
+  // 收款信息区域（PI 必须有收款信息）
+  if (bank && bank.bankName) {
+    if (y > 195) { doc.addPage(); y = 15; }
+    const bankW = pw - 2 * ml;
+    const rowH = 7.5;
+    const rows = [
+      { label: 'Beneficiary Bank', value: bank.bankName || '' },
+      { label: 'Account Holder Name', value: bank.accountName || '' },
+      { label: 'Collection Currency', value: bank.currency || 'USD' },
+      { label: 'Account number', value: bank.accountNo || '' },
+      { label: 'SWIFT / BIC', value: bank.swiftCode || '' },
+      { label: 'Payment address', value: bank.bankAddress || '' }
+    ].filter(r => r.value);
+    const bankH = rows.length * rowH + 2;
+
+    // 标题条
+    doc.setFillColor(...PDF_CLR.navy);
+    doc.rect(ml, y, bankW, 7, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_CLR.gold);
+    doc.text('BANK ACCOUNT INFORMATION', ml + 2, y + 5);
+
+    // 外边框
+    doc.setDrawColor(...PDF_CLR.grayBorder);
+    doc.setLineWidth(0.3);
+    doc.rect(ml, y + 7, bankW, bankH);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...PDF_CLR.black);
+    rows.forEach((r, i) => {
+      const ry = y + 7 + 1.5 + i * rowH;
+      // 行底线（最后一行不画，外框已包含）
+      if (i < rows.length - 1) {
+        doc.setDrawColor(...PDF_CLR.grayBorder);
+        doc.setLineWidth(0.2);
+        doc.line(ml, ry + rowH - 1.5, ml + bankW, ry + rowH - 1.5);
+      }
+      doc.text(`${r.label}:  ${r.value}`, ml + 3, ry + 4);
+    });
+
+    y = y + 7 + bankH + 6;
   }
 
   // 签名区域
-  if (y > 220) { doc.addPage(); y = 15; }
+  if (y > 215) { doc.addPage(); y = 15; }
   const sigW = (pw - 2 * ml - 6) / 2;
   const sigH = 35;
 
@@ -1271,8 +1366,8 @@ function generatePI() {
 function generateCI() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const pw = 210, ml = 12;
-  const ci = DB.ci, sel = DB.seller, buy = DB.buyer;
+  const pw = 210, ml = 14;
+  const ci = DB.ci, sel = DB.seller, buy = DB.buyer, bank = DB.bank;
   const sub = calcSubtotal();
   const total = sub + parseFloat(ci.freight || 0);
 
@@ -1291,7 +1386,7 @@ function generateCI() {
   y = drawSeparatorLine(doc, y);
 
   // CI表格
-  const colW = [78, 28, 24, 12, 26, 26]; // 194mm
+  const colW = [76, 26, 22, 12, 24, 22]; // 182mm = pw - 2*ml (182mm)
   const headers = [
     (DB.colHeaders && DB.colHeaders.ci[0]) || 'Description of Goods',
     (DB.colHeaders && DB.colHeaders.ci[1]) || 'HS Code',
@@ -1311,7 +1406,7 @@ function generateCI() {
   ]);
 
   prodRows.push([
-    { content: `FREIGHT  (${ci.trade})`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow } },
+    { content: `FREIGHT  (${ci.trade})`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow, halign: 'left' } },
     '',
     { content: `USD ${parseFloat(ci.freight || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.grayRow, textColor: PDF_CLR.gold } }
@@ -1319,7 +1414,7 @@ function generateCI() {
 
   prodRows.push([
     { content: 'TOTAL AMOUNT', colSpan: 5,
-      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white, halign: 'left' } },
     { content: `USD ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.gold } }
   ]);
@@ -1366,19 +1461,19 @@ function generateCI() {
 
   // 备注
   if (ci.notes && ci.notes.length) {
-    if (y > 235) { doc.addPage(); y = 15; }
+    if (y > 230) { doc.addPage(); y = 15; }
     const noteW = pw - 2 * ml;
     doc.setFillColor(...PDF_CLR.grayHeader);
-    doc.rect(ml, y, noteW, 6, 'F');
+    doc.rect(ml, y, noteW, 7, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...PDF_CLR.black);
-    doc.text('NOTES & TERMS', ml + 2, y + 4.5);
+    doc.text('NOTES & TERMS', ml + 2, y + 5);
 
-    let noteH = ci.notes.length * 5 + 4;
+    let noteH = ci.notes.length * 6 + 4;
     doc.setDrawColor(...PDF_CLR.grayBorder);
     doc.setLineWidth(0.3);
-    doc.rect(ml, y + 6, noteW, noteH);
+    doc.rect(ml, y + 7, noteW, noteH);
 
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'italic');
@@ -1386,10 +1481,12 @@ function generateCI() {
     ci.notes.forEach((n, i) => {
       const noteText = `${i + 1}.    ${n}`;
       const lines = doc.splitTextToSize(noteText, noteW - 6);
-      doc.text(lines, ml + 3, y + 11 + i * 5);
+      doc.text(lines, ml + 3, y + 12.5 + i * 6);
     });
-    y = y + 6 + noteH + 5;
+    y = y + 7 + noteH + 6;
   }
+
+  // CI 不显示银行信息
 
   // 签名
   if (y > 220) { doc.addPage(); y = 15; }
@@ -1428,16 +1525,16 @@ function generateCI() {
 function generatePL() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
-  const pw = 297, ml = 12;
+  const pw = 297, ml = 14;
   const pl = DB.pl, sel = DB.seller, buy = DB.buyer;
 
   let y = drawTitleBlock(doc, 'PACKING LIST');
 
   // 四栏信息
-  const gap = 6;
+  const gap = 8;
   const colW4 = (pw - 2 * ml - gap * 3) / 4;
-  const headerH = 6;
-  const bodyH = 22;
+  const headerH = 7;
+  const bodyH = 26;
 
   // 四个标题条
   const titles4 = ['SELLER / EXPORTER', 'BUYER / IMPORTER', 'DOCUMENT INFO', 'SHIPMENT INFO'];
@@ -1455,7 +1552,7 @@ function generatePL() {
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...PDF_CLR.black);
-    doc.text(t, x + 2, y + 4.5);
+    doc.text(t, x + 2, y + 5);
 
     doc.setDrawColor(...PDF_CLR.grayBorder);
     doc.setLineWidth(0.3);
@@ -1468,11 +1565,11 @@ function generatePL() {
     doc.text(lines, x + 2, y + headerH + 5);
   });
 
-  y = y + headerH + bodyH + 4;
+  y = y + headerH + bodyH + 6;
   y = drawSeparatorLine(doc, y);
 
   // PL表格
-  const colW = [30, 72, 20, 14, 26, 26, 36, 26]; // 250mm for landscape
+  const colW = [30, 74, 22, 16, 28, 28, 38, 33]; // 269mm = pw - 2*ml (269mm)
   let totalNet = 0, totalGross = 0, totalCBM = 0, totalQty = 0;
 
   const prodRows = DB.products.map(p => {
@@ -1494,7 +1591,7 @@ function generatePL() {
   });
 
   prodRows.push([
-    { content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white, halign: 'left' } },
     { content: String(totalQty), styles: { fontStyle: 'bold', halign: 'center', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
     { content: totalNet.toFixed(3), styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
     { content: totalGross.toFixed(3), styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
@@ -1555,19 +1652,19 @@ function generatePL() {
 
   // 备注
   if (pl.notes && pl.notes.length) {
-    if (y > 180) { doc.addPage(); y = 15; }
+    if (y > 155) { doc.addPage(); y = 15; }
     const noteW = pw - 2 * ml;
     doc.setFillColor(...PDF_CLR.grayHeader);
-    doc.rect(ml, y, noteW, 6, 'F');
+    doc.rect(ml, y, noteW, 7, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...PDF_CLR.black);
-    doc.text('NOTES', ml + 2, y + 4.5);
+    doc.text('NOTES', ml + 2, y + 5);
 
-    let noteH = pl.notes.length * 5 + 4;
+    let noteH = pl.notes.length * 6 + 4;
     doc.setDrawColor(...PDF_CLR.grayBorder);
     doc.setLineWidth(0.3);
-    doc.rect(ml, y + 6, noteW, noteH);
+    doc.rect(ml, y + 7, noteW, noteH);
 
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'italic');
@@ -1575,13 +1672,13 @@ function generatePL() {
     pl.notes.forEach((n, i) => {
       const noteText = `${i + 1}.    ${n}`;
       const lines = doc.splitTextToSize(noteText, noteW - 6);
-      doc.text(lines, ml + 3, y + 11 + i * 5);
+      doc.text(lines, ml + 3, y + 12.5 + i * 6);
     });
-    y = y + 6 + noteH + 5;
+    y = y + 7 + noteH + 6;
   }
 
   // 签名
-  if (y > 165) { doc.addPage(); y = 15; }
+  if (y > 150) { doc.addPage(); y = 15; }
   const sigW = (pw - 2 * ml - 6) / 2;
   const sigH = 35;
   doc.setDrawColor(...PDF_CLR.grayBorder);
