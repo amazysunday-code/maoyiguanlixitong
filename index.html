@@ -971,414 +971,644 @@ function usd(n){ return 'USD ' + parseFloat(n||0).toFixed(2); }
 
 /* ═══════════════════════════════
    PDF SHARED STYLES
+   严格匹配参考PDF图片版式
 ═══════════════════════════════ */
-const PDF_COLORS = {
-  headerBg:[32,38,60],     // dark blue-grey
-  headerText:[220,195,100], // gold
-  rowEven:[248,248,252],
-  rowOdd:[255,255,255],
-  totalBg:[32,38,60],
-  totalText:[220,195,100],
-  freightBg:[245,243,235],
-  border:[180,175,165],
-  textDark:[30,30,40],
-  textMid:[80,80,100],
-  accent:[32,38,60]
+
+const PDF_CLR = {
+  // 主色调
+  navy: [27, 58, 92],        // #1B3A5C 深蓝色 - 标题块、表头、总计行
+  navyLight: [35, 70, 110],  // 稍浅的深蓝
+  gold: [201, 168, 76],      // #C9A84C 金色 - 副标题、金额
+  goldLight: [220, 195, 120], // 浅金色
+  // 灰度
+  grayHeader: [232, 232, 232], // #E8E8E8 信息标题条背景
+  grayRow: [245, 245, 245],   // #F5F5F5 特殊行背景
+  grayBorder: [200, 200, 200], // #CCCCCC 边框
+  grayText: [100, 100, 100],  // 次要文字
+  // 基础
+  white: [255, 255, 255],
+  black: [40, 40, 45],
+  blueLink: [30, 100, 180],   // Model列蓝色
 };
 
-function buildDocHeader(doc, title, subtitle, db){
-  const pw=210, ml=13;
-  // Title bar
-  doc.setFillColor(...PDF_COLORS.headerBg);
-  doc.rect(0,0,pw,18,'F');
-  doc.setFontSize(15); doc.setFont('helvetica','bold');
-  doc.setTextColor(...PDF_COLORS.headerText);
-  doc.text(title, pw/2, 11, {align:'center'});
-  if(subtitle){
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.setTextColor(200,185,140);
-    doc.text(subtitle, pw/2, 16, {align:'center'});
-  }
-  return 21;
+/* ── 绘制顶部大标题块 ── */
+/* ── 绘制顶部大标题块 ── */
+function drawTitleBlock(doc, mainTitle) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ml = 12; // 与内容区边距一致
+  const blockH = 26; // 标题块高度（去掉副标题后减小）
+
+  // 深蓝色背景 - 与内容区对齐，两侧留白
+  doc.setFillColor(...PDF_CLR.navy);
+  doc.rect(ml, 0, pw - 2 * ml, blockH, 'F');
+
+  // 主标题 - 白色粗体居中
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PDF_CLR.white);
+  doc.text(mainTitle, pw / 2, 17, { align: 'center' });
+
+  return blockH + 6; // 返回下方起始Y坐标，增加留白
 }
 
-function buildInfoBlock(doc, startY, left, right){
-  const pw=210, ml=13, cw=(pw-2*ml);
-  doc.autoTable({
-    startY,
-    theme:'grid',
-    styles:{fontSize:7.5,cellPadding:3.5,lineColor:PDF_COLORS.border,lineWidth:0.3,overflow:'linebreak'},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontSize:7,fontStyle:'bold',cellPadding:2.5},
-    columnStyles:{0:{cellWidth:cw/2},1:{cellWidth:cw/2}},
-    head:[[
-      {content:left.header,styles:{halign:'left'}},
-      {content:right.header,styles:{halign:'left'}}
-    ]],
-    body:[[
-      {content:left.body,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
-      {content:right.body,styles:{valign:'top',textColor:PDF_COLORS.textDark}}
-    ]],
-    margin:{left:ml,right:ml}
-  });
-  return doc.lastAutoTable.finalY;
+function drawInfoSection(doc, startY, leftTitle, leftBody, rightTitle, rightBody) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ml = 12; // 左边距
+  const gap = 8; // 两栏间距
+  const colW = (pw - 2 * ml - gap) / 2;
+  const headerH = 6;
+  const bodyH = 22;
+
+  // 左栏标题条
+  doc.setFillColor(...PDF_CLR.grayHeader);
+  doc.rect(ml, startY, colW, headerH, 'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PDF_CLR.black);
+  doc.text(leftTitle, ml + 2, startY + 4.5);
+
+  // 左栏内容区
+  doc.setDrawColor(...PDF_CLR.grayBorder);
+  doc.setLineWidth(0.3);
+  doc.rect(ml, startY + headerH, colW, bodyH);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...PDF_CLR.black);
+  const leftLines = doc.splitTextToSize(leftBody, colW - 4);
+  doc.text(leftLines, ml + 2, startY + headerH + 5);
+
+  // 右栏标题条
+  const rightX = ml + colW + gap;
+  doc.setFillColor(...PDF_CLR.grayHeader);
+  doc.rect(rightX, startY, colW, headerH, 'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PDF_CLR.black);
+  doc.text(rightTitle, rightX + 2, startY + 4.5);
+
+  // 右栏内容区
+  doc.rect(rightX, startY + headerH, colW, bodyH);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...PDF_CLR.black);
+  const rightLines = doc.splitTextToSize(rightBody, colW - 4);
+  doc.text(rightLines, rightX + 2, startY + headerH + 5);
+
+  return startY + headerH + bodyH + 2;
+}
+
+/* ── 绘制分隔线 ── */
+function drawSeparatorLine(doc, y) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ml = 12;
+  doc.setDrawColor(...PDF_CLR.navy);
+  doc.setLineWidth(1.5);
+  doc.line(ml, y, pw - ml, y);
+  return y + 4;
+}
+
+/* ── 绘制页脚 ── */
+function drawFooter(doc, docName, pageNum, totalPages) {
+  const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  const ml = 12;
+
+  // 底部细线
+  doc.setDrawColor(...PDF_CLR.grayBorder);
+  doc.setLineWidth(0.3);
+  doc.line(ml, ph - 10, pw - ml, ph - 10);
+
+  // 左下角文档名
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...PDF_CLR.grayText);
+  doc.text(docName, ml, ph - 5);
+
+  // 右下角页码
+  doc.text(`${pageNum} / ${totalPages}`, pw - ml, ph - 5, { align: 'right' });
 }
 
 /* ═══════════════════════════════
    GENERATE PI PDF
 ═══════════════════════════════ */
-function generatePI(){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
-  const pw=210, ml=13;
-  const pi=DB.pi, sel=DB.seller, buy=DB.buyer;
+function generatePI() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pw = 210, ml = 12;
+  const pi = DB.pi, sel = DB.seller, buy = DB.buyer;
   const sub = calcSubtotal();
-  const total = sub + parseFloat(pi.freight||0);
+  const total = sub + parseFloat(pi.freight || 0);
 
-  let y = buildDocHeader(doc,'PROFORMA INVOICE','MD800 Series Variable Frequency Drive', DB);
+  let y = drawTitleBlock(doc, 'PROFORMA INVOICE');
 
-  // Info blocks row 1: Seller | Doc Info
-  const sellerBody = sel.name + '\n' + sel.address;
-  const docBody = `Doc No.: ${pi.docNo}\nDate: ${fmtDate(pi.date)}\nCurrency: ${pi.currency}`;
-  y = buildInfoBlock(doc, y, {header:'SELLER / EXPORTER',body:sellerBody},{header:'DOCUMENT INFO',body:docBody}) + 1;
+  // 第一行信息
+  y = drawInfoSection(doc, y,
+    'SELLER / EXPORTER', sel.name + '\n' + sel.address,
+    'DOCUMENT INFO', `Doc No.: ${pi.docNo}\nDate: ${pi.date}\nCurrency: ${pi.currency}`
+  );
 
-  // Info blocks row 2: Buyer | Terms
-  const buyerBody = buy.name + '\n' + buy.address;
-  const termsBody = `Payment: ${pi.payment}\nDelivery: ${pi.delivery}\nTrade: ${pi.trade}`;
-  y = buildInfoBlock(doc, y, {header:'BUYER / IMPORTER',body:buyerBody},{header:'TERMS',body:termsBody}) + 3;
+  // 第二行信息
+  y = drawInfoSection(doc, y,
+    'BUYER / IMPORTER', buy.name + '\n' + buy.address,
+    'TERMS', `Payment: ${pi.payment}\nDelivery: ${pi.delivery}\nTrade: ${pi.trade}`
+  );
 
-  // Product table
-  const cw = pw - 2*ml; // 184
-  const colWidths = [16,18,32,70,9,21,18]; // sum=184
-  const prodRows = DB.products.map(p=>[
-    p.power||'', p.func||'', p.model||'', p.description||'',
-    String(p.qty||0),
-    parseFloat(p.unitPrice||0).toFixed(2),
-    (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2)
+  // 分隔线
+  y = drawSeparatorLine(doc, y);
+
+  // 产品表格
+  const colW = [16, 20, 34, 66, 12, 24, 22]; // 194mm total
+  const headers = [
+    { content: (DB.colHeaders && DB.colHeaders.pi[0]) || 'Power', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[1]) || 'Function', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[2]) || 'Model', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[3]) || 'Description', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[4]) || 'Qty', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[5]) || 'Unit Price\n(USD)', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.pi[6]) || 'Amount\n(USD)', styles: { halign: 'center' } }
+  ];
+
+  // 产品行
+  const prodRows = DB.products.map(p => [
+    p.power || '',
+    p.func || '',
+    { content: p.model || '', styles: { textColor: PDF_CLR.blueLink, fontStyle: 'bold' } },
+    p.description || '',
+    String(p.qty || 0),
+    parseFloat(p.unitPrice || 0).toFixed(2),
+    (parseFloat(p.qty || 0) * parseFloat(p.unitPrice || 0)).toFixed(2)
   ]);
+
+  // 特殊行 - connectors（如果有）
+  // 运费行
   prodRows.push([
-    {content:`FREIGHT (${pi.trade})`,colSpan:5,styles:{fontStyle:'bold',fillColor:PDF_COLORS.freightBg}},
-    '',
-    {content:`USD ${parseFloat(pi.freight||0).toLocaleString('en-US',{minimumFractionDigits:2})}`,styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.freightBg}}
+    { content: `FREIGHT  (${pi.trade})`, colSpan: 6, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow } },
+    { content: `USD ${parseFloat(pi.freight || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.grayRow, textColor: PDF_CLR.gold } }
   ]);
+
+  // 总计行
   prodRows.push([
-    {content:'TOTAL AMOUNT (Goods + DDP Freight)',colSpan:6,
-      styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:fmtUSD(total),
-      styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+    { content: 'TOTAL AMOUNT (Goods + DDP Freight)', colSpan: 6,
+      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: `USD ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.gold } }
   ]);
 
   doc.autoTable({
-    startY:y,
-    theme:'grid',
-    head:[[
-      {content: (DB.colHeaders&&DB.colHeaders.pi[0])||'Power',       styles:{halign:'center'}},
-      {content: (DB.colHeaders&&DB.colHeaders.pi[1])||'Function',    styles:{halign:'center'}},
-      (DB.colHeaders&&DB.colHeaders.pi[2])||'Model',
-      (DB.colHeaders&&DB.colHeaders.pi[3])||'Description',
-      {content: (DB.colHeaders&&DB.colHeaders.pi[4])||'Qty',         styles:{halign:'center'}},
-      {content: (DB.colHeaders&&DB.colHeaders.pi[5])||'Unit Price\n(USD)', styles:{halign:'right'}},
-      {content: (DB.colHeaders&&DB.colHeaders.pi[6])||'Amount\n(USD)',     styles:{halign:'right'}}
-    ]],
-    body:prodRows,
-    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
-    columnStyles:{
-      0:{cellWidth:colWidths[0],halign:'center'},
-      1:{cellWidth:colWidths[1],halign:'center'},
-      2:{cellWidth:colWidths[2],font:'courier'},
-      3:{cellWidth:colWidths[3]},
-      4:{cellWidth:colWidths[4],halign:'center'},
-      5:{cellWidth:colWidths[5],halign:'right'},
-      6:{cellWidth:colWidths[6],halign:'right'}
+    startY: y,
+    theme: 'grid',
+    head: [headers],
+    body: prodRows,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+      lineColor: PDF_CLR.grayBorder,
+      lineWidth: 0.3,
+      textColor: PDF_CLR.black,
+      font: 'helvetica',
+      valign: 'middle'
     },
-    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
-    rowPageBreak:'avoid',
-    pageBreak:'avoid',
-    margin:{left:ml,right:ml}
+    headStyles: {
+      fillColor: PDF_CLR.navy,
+      textColor: PDF_CLR.white,
+      fontStyle: 'bold',
+      fontSize: 8,
+      cellPadding: 2,
+      halign: 'center',
+      valign: 'middle'
+    },
+    columnStyles: {
+      0: { cellWidth: colW[0], halign: 'center' },
+      1: { cellWidth: colW[1], halign: 'center' },
+      2: { cellWidth: colW[2], halign: 'center' },
+      3: { cellWidth: colW[3], halign: 'left' },
+      4: { cellWidth: colW[4], halign: 'center' },
+      5: { cellWidth: colW[5], halign: 'right' },
+      6: { cellWidth: colW[6], halign: 'right' }
+    },
+    rowPageBreak: 'avoid',
+    pageBreak: 'auto',
+    margin: { left: ml, right: ml },
+    showHead: 'everyPage'
   });
 
-  y = doc.lastAutoTable.finalY + 6;
+  y = doc.lastAutoTable.finalY + 5;
 
-  // Notes
-  if(pi.notes && pi.notes.length){
-    doc.setFontSize(7.5); doc.setFont('helvetica','bold');
-    doc.setTextColor(...PDF_COLORS.textDark);
-    doc.text('NOTES & TERMS', ml, y);
-    y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7);
-    doc.setTextColor(...PDF_COLORS.textMid);
-    pi.notes.forEach((n,i)=>{
-      if(y > 282){ doc.addPage(); y=15; }
-      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
-      doc.text(lines, ml+1, y);
-      y += lines.length*4 + 0.8;
+  // 备注区域
+  if (pi.notes && pi.notes.length) {
+    if (y > 235) { doc.addPage(); y = 15; }
+
+    // 备注标题条
+    const noteW = pw - 2 * ml;
+    doc.setFillColor(...PDF_CLR.grayHeader);
+    doc.rect(ml, y, noteW, 6, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_CLR.black);
+    doc.text('NOTES & TERMS', ml + 2, y + 4.5);
+
+    // 备注内容边框
+    let noteH = pi.notes.length * 5 + 4;
+    doc.setDrawColor(...PDF_CLR.grayBorder);
+    doc.setLineWidth(0.3);
+    doc.rect(ml, y + 6, noteW, noteH);
+
+    // 备注内容
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...PDF_CLR.black);
+    pi.notes.forEach((n, i) => {
+      const noteText = `${i + 1}.    ${n}`;
+      const lines = doc.splitTextToSize(noteText, noteW - 6);
+      doc.text(lines, ml + 3, y + 11 + i * 5);
     });
-    y += 2;
+
+    y = y + 6 + noteH + 5;
   }
 
-  // Signature blocks
-  if(y > 268){ doc.addPage(); y=15; }
-  const sigW = (pw-2*ml)/2 - 5;
-  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml, y, sigW, 18); doc.rect(ml+sigW+10, y, sigW, 18);
-  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER', ml+sigW/2, y+4.5, {align:'center'});
-  doc.text('BUYER', ml+sigW+10+sigW/2, y+4.5, {align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________', ml+3, y+10);
-  doc.text('Company Stamp:', ml+3, y+15);
-  doc.text('Authorized Signature: ___________________', ml+sigW+13, y+10);
-  doc.text('Company Stamp:', ml+sigW+13, y+15);
+  // 签名区域
+  if (y > 220) { doc.addPage(); y = 15; }
+  const sigW = (pw - 2 * ml - 6) / 2;
+  const sigH = 35;
 
-  doc.save(`PI_${pi.docNo}_${pi.date||'draft'}.pdf`);
-  toast('PI PDF 已生成下载！','ok');
+  // 外边框
+  doc.setDrawColor(...PDF_CLR.grayBorder);
+  doc.setLineWidth(0.3);
+  doc.rect(ml, y, sigW * 2 + 6, sigH);
+  doc.line(ml + sigW + 3, y, ml + sigW + 3, y + sigH);
+
+  // SELLER
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PDF_CLR.black);
+  doc.text('SELLER', ml + 3, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + 3, y + 18);
+  doc.text('Company Stamp:', ml + 3, y + 26);
+
+  // BUYER
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BUYER', ml + sigW + 6, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + sigW + 6, y + 18);
+  doc.text('Company Stamp:', ml + sigW + 6, y + 26);
+
+  // 页脚
+  drawFooter(doc, 'PROFORMA INVOICE', 1, 1);
+
+  doc.save(`PI_${pi.docNo}_${pi.date || 'draft'}.pdf`);
+  toast('PI PDF 已生成下载！', 'ok');
 }
 
 /* ═══════════════════════════════
    GENERATE CI PDF
 ═══════════════════════════════ */
-function generateCI(){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
-  const pw=210, ml=13;
-  const ci=DB.ci, sel=DB.seller, buy=DB.buyer;
+function generateCI() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pw = 210, ml = 12;
+  const ci = DB.ci, sel = DB.seller, buy = DB.buyer;
   const sub = calcSubtotal();
-  const total = sub + parseFloat(ci.freight||0);
+  const total = sub + parseFloat(ci.freight || 0);
 
-  let y = buildDocHeader(doc,'COMMERCIAL INVOICE','MD800 Series Variable Frequency Drive', DB);
+  let y = drawTitleBlock(doc, 'COMMERCIAL INVOICE');
 
-  // Seller | Doc Info
-  const sellerBody = sel.name + '\n' + sel.address;
-  const docBody = `Doc No.: ${ci.docNo}\nDate: ${fmtDate(ci.date)}\nCurrency: ${ci.currency}`;
-  y = buildInfoBlock(doc, y, {header:'SELLER / EXPORTER',body:sellerBody},{header:'DOCUMENT INFO',body:docBody}) + 1;
+  y = drawInfoSection(doc, y,
+    'SELLER / EXPORTER', sel.name + '\n' + sel.address,
+    'DOCUMENT INFO', `Doc No.: ${ci.docNo}\nDate: ${ci.date}\nCurrency: ${ci.currency}`
+  );
 
-  // Buyer | Terms
-  const buyerBody = buy.name + '\n' + buy.address;
-  const termsBody = `Payment: ${ci.payment}\nTrade: ${ci.trade}\nPort of Loading: ${ci.portOfLoading}\nPort of Discharge: ${ci.portOfDischarge}`;
-  y = buildInfoBlock(doc, y, {header:'BUYER / IMPORTER',body:buyerBody},{header:'SHIPMENT TERMS',body:termsBody}) + 3;
+  y = drawInfoSection(doc, y,
+    'BUYER / IMPORTER', buy.name + '\n' + buy.address,
+    'SHIPMENT TERMS', `Payment: ${ci.payment}\nTrade: ${ci.trade}\nPort of Loading: ${ci.portOfLoading}\nPort of Discharge: ${ci.portOfDischarge}`
+  );
 
-  // Product table — CI columns
-  const cw = pw - 2*ml; // 184
-  // Desc(80) + HSCode(28) + Origin(22) + Qty(10) + UnitP(22) + Amt(22) = 184
-  const colW = [80,28,22,10,22,22];
-  const prodRows = DB.products.map(p=>[
-    p.description||'',
-    p.hsCode||'',
-    p.origin||'China',
-    String(p.qty||0),
-    parseFloat(p.unitPrice||0).toFixed(2),
-    (parseFloat(p.qty||0)*parseFloat(p.unitPrice||0)).toFixed(2)
+  y = drawSeparatorLine(doc, y);
+
+  // CI表格
+  const colW = [78, 28, 24, 12, 26, 26]; // 194mm
+  const headers = [
+    (DB.colHeaders && DB.colHeaders.ci[0]) || 'Description of Goods',
+    (DB.colHeaders && DB.colHeaders.ci[1]) || 'HS Code',
+    (DB.colHeaders && DB.colHeaders.ci[2]) || 'Country of\nOrigin',
+    { content: (DB.colHeaders && DB.colHeaders.ci[3]) || 'Qty', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.ci[4]) || 'Unit Price\n(USD)', styles: { halign: 'center' } },
+    { content: (DB.colHeaders && DB.colHeaders.ci[5]) || 'Amount\n(USD)', styles: { halign: 'center' } }
+  ];
+
+  const prodRows = DB.products.map(p => [
+    p.description || '',
+    p.hsCode || '',
+    p.origin || 'China',
+    String(p.qty || 0),
+    parseFloat(p.unitPrice || 0).toFixed(2),
+    (parseFloat(p.qty || 0) * parseFloat(p.unitPrice || 0)).toFixed(2)
   ]);
+
   prodRows.push([
-    {content:`FREIGHT (${ci.trade})`,colSpan:4,styles:{fontStyle:'bold',fillColor:PDF_COLORS.freightBg}},
+    { content: `FREIGHT  (${ci.trade})`, colSpan: 4, styles: { fontStyle: 'bold', fillColor: PDF_CLR.grayRow } },
     '',
-    {content:`USD ${parseFloat(ci.freight||0).toLocaleString('en-US',{minimumFractionDigits:2})}`,styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.freightBg}}
+    { content: `USD ${parseFloat(ci.freight || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.grayRow, textColor: PDF_CLR.gold } }
   ]);
+
   prodRows.push([
-    {content:'TOTAL AMOUNT',colSpan:5,styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:fmtUSD(total),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+    { content: 'TOTAL AMOUNT', colSpan: 5,
+      styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: `USD ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.gold } }
   ]);
 
   doc.autoTable({
-    startY:y,
-    theme:'grid',
-    head:[[(DB.colHeaders&&DB.colHeaders.ci[0])||'Description of Goods',
-           (DB.colHeaders&&DB.colHeaders.ci[1])||'HS Code',
-           (DB.colHeaders&&DB.colHeaders.ci[2])||'Country of\nOrigin',
-           {content:(DB.colHeaders&&DB.colHeaders.ci[3])||'Qty',styles:{halign:'center'}},
-           {content:(DB.colHeaders&&DB.colHeaders.ci[4])||'Unit Price\n(USD)',styles:{halign:'right'}},
-           {content:(DB.colHeaders&&DB.colHeaders.ci[5])||'Amount\n(USD)',styles:{halign:'right'}}]],
-    body:prodRows,
-    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
-    columnStyles:{
-      0:{cellWidth:colW[0]},
-      1:{cellWidth:colW[1],halign:'center'},
-      2:{cellWidth:colW[2],halign:'center'},
-      3:{cellWidth:colW[3],halign:'center'},
-      4:{cellWidth:colW[4],halign:'right'},
-      5:{cellWidth:colW[5],halign:'right'}
+    startY: y,
+    theme: 'grid',
+    head: [headers],
+    body: prodRows,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+      lineColor: PDF_CLR.grayBorder,
+      lineWidth: 0.3,
+      textColor: PDF_CLR.black,
+      font: 'helvetica',
+      valign: 'middle'
     },
-    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
-    rowPageBreak:'avoid',
-    pageBreak:'avoid',
-    margin:{left:ml,right:ml}
+    headStyles: {
+      fillColor: PDF_CLR.navy,
+      textColor: PDF_CLR.white,
+      fontStyle: 'bold',
+      fontSize: 8,
+      cellPadding: 2,
+      halign: 'center',
+      valign: 'middle'
+    },
+    columnStyles: {
+      0: { cellWidth: colW[0], halign: 'left' },
+      1: { cellWidth: colW[1], halign: 'center' },
+      2: { cellWidth: colW[2], halign: 'center' },
+      3: { cellWidth: colW[3], halign: 'center' },
+      4: { cellWidth: colW[4], halign: 'right' },
+      5: { cellWidth: colW[5], halign: 'right' }
+    },
+    rowPageBreak: 'avoid',
+    pageBreak: 'auto',
+    margin: { left: ml, right: ml },
+    showHead: 'everyPage'
   });
 
-  y = doc.lastAutoTable.finalY + 4;
+  y = doc.lastAutoTable.finalY + 5;
 
-  // Notes
-  if(ci.notes && ci.notes.length){
-    doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-    doc.text('NOTES & TERMS', ml, y);
-    y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
-    ci.notes.forEach((n,i)=>{
-      if(y>282){doc.addPage();y=15;}
-      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml-2);
-      doc.text(lines, ml+1, y);
-      y += lines.length*4+0.8;
+  // 备注
+  if (ci.notes && ci.notes.length) {
+    if (y > 235) { doc.addPage(); y = 15; }
+    const noteW = pw - 2 * ml;
+    doc.setFillColor(...PDF_CLR.grayHeader);
+    doc.rect(ml, y, noteW, 6, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_CLR.black);
+    doc.text('NOTES & TERMS', ml + 2, y + 4.5);
+
+    let noteH = ci.notes.length * 5 + 4;
+    doc.setDrawColor(...PDF_CLR.grayBorder);
+    doc.setLineWidth(0.3);
+    doc.rect(ml, y + 6, noteW, noteH);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...PDF_CLR.black);
+    ci.notes.forEach((n, i) => {
+      const noteText = `${i + 1}.    ${n}`;
+      const lines = doc.splitTextToSize(noteText, noteW - 6);
+      doc.text(lines, ml + 3, y + 11 + i * 5);
     });
-    y += 2;
+    y = y + 6 + noteH + 5;
   }
 
-  // Signatures
-  if(y>268){doc.addPage();y=15;}
-  const sigW = (pw-2*ml)/2 - 5;
-  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml,y,sigW,18); doc.rect(ml+sigW+10,y,sigW,18);
-  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER',ml+sigW/2,y+4.5,{align:'center'});
-  doc.text('BUYER',ml+sigW+10+sigW/2,y+4.5,{align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________',ml+3,y+10);
-  doc.text('Company Stamp:',ml+3,y+15);
-  doc.text('Authorized Signature: ___________________',ml+sigW+13,y+10);
-  doc.text('Company Stamp:',ml+sigW+13,y+15);
+  // 签名
+  if (y > 220) { doc.addPage(); y = 15; }
+  const sigW = (pw - 2 * ml - 6) / 2;
+  const sigH = 35;
+  doc.setDrawColor(...PDF_CLR.grayBorder);
+  doc.setLineWidth(0.3);
+  doc.rect(ml, y, sigW * 2 + 6, sigH);
+  doc.line(ml + sigW + 3, y, ml + sigW + 3, y + sigH);
 
-  doc.save(`CI_${ci.docNo}_${ci.date||'draft'}.pdf`);
-  toast('CI PDF 已生成下载！','ok');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SELLER', ml + 3, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + 3, y + 18);
+  doc.text('Company Stamp:', ml + 3, y + 26);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BUYER', ml + sigW + 6, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + sigW + 6, y + 18);
+  doc.text('Company Stamp:', ml + sigW + 6, y + 26);
+
+  drawFooter(doc, 'COMMERCIAL INVOICE', 1, 1);
+
+  doc.save(`CI_${ci.docNo}_${ci.date || 'draft'}.pdf`);
+  toast('CI PDF 已生成下载！', 'ok');
 }
 
 /* ═══════════════════════════════
    GENERATE PL PDF
 ═══════════════════════════════ */
-function generatePL(){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
-  // Landscape: 297 x 210
-  const pw=297, ph=210, ml=13;
-  const pl=DB.pl, sel=DB.seller, buy=DB.buyer;
+function generatePL() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+  const pw = 297, ml = 12;
+  const pl = DB.pl, sel = DB.seller, buy = DB.buyer;
 
-  let y = 0;
-  // Title bar
-  doc.setFillColor(...PDF_COLORS.headerBg);
-  doc.rect(0,0,pw,18,'F');
-  doc.setFontSize(15); doc.setFont('helvetica','bold');
-  doc.setTextColor(...PDF_COLORS.headerText);
-  doc.text('PACKING LIST', pw/2, 11, {align:'center'});
-  doc.setFontSize(8); doc.setFont('helvetica','normal');
-  doc.setTextColor(200,185,140);
-  doc.text('MD800 Series Variable Frequency Drive', pw/2, 16, {align:'center'});
-  y = 21;
+  let y = drawTitleBlock(doc, 'PACKING LIST');
 
-  // Info block (landscape, 4 columns)
-  const cw4 = (pw-2*ml)/4;
-  doc.autoTable({
-    startY:y,
-    theme:'grid',
-    styles:{fontSize:7.5,cellPadding:3,lineColor:PDF_COLORS.border,lineWidth:0.3,overflow:'linebreak'},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontSize:7,fontStyle:'bold',cellPadding:2.5},
-    columnStyles:{0:{cellWidth:cw4},1:{cellWidth:cw4},2:{cellWidth:cw4},3:{cellWidth:cw4}},
-    head:[[
-      {content:'SELLER / EXPORTER',styles:{halign:'left'}},
-      {content:'BUYER / IMPORTER',styles:{halign:'left'}},
-      {content:'DOCUMENT INFO',styles:{halign:'left'}},
-      {content:'SHIPMENT INFO',styles:{halign:'left'}}
-    ]],
-    body:[[
-      {content:sel.name+'\n'+sel.address,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
-      {content:buy.name+'\n'+buy.address,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
-      {content:`Doc No.: ${pl.docNo}\nDate: ${fmtDate(pl.date)}\nMarks: ${pl.marks}`,styles:{valign:'top',textColor:PDF_COLORS.textDark}},
-      {content:`Port of Loading: ${pl.portOfLoading}\nPort of Discharge: ${pl.portOfDischarge}\nTotal Cartons: ${pl.totalCartons}`,styles:{valign:'top',textColor:PDF_COLORS.textDark}}
-    ]],
-    margin:{left:ml,right:ml}
+  // 四栏信息
+  const gap = 6;
+  const colW4 = (pw - 2 * ml - gap * 3) / 4;
+  const headerH = 6;
+  const bodyH = 22;
+
+  // 四个标题条
+  const titles4 = ['SELLER / EXPORTER', 'BUYER / IMPORTER', 'DOCUMENT INFO', 'SHIPMENT INFO'];
+  const bodies4 = [
+    sel.name + '\n' + sel.address,
+    buy.name + '\n' + buy.address,
+    `Doc No.: ${pl.docNo}\nDate: ${pl.date}\nMarks: ${pl.marks}`,
+    `Port of Loading: ${pl.portOfLoading}\nPort of Discharge: ${pl.portOfDischarge}\nTotal Cartons: ${pl.totalCartons}`
+  ];
+
+  titles4.forEach((t, i) => {
+    const x = ml + i * (colW4 + gap);
+    doc.setFillColor(...PDF_CLR.grayHeader);
+    doc.rect(x, y, colW4, headerH, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_CLR.black);
+    doc.text(t, x + 2, y + 4.5);
+
+    doc.setDrawColor(...PDF_CLR.grayBorder);
+    doc.setLineWidth(0.3);
+    doc.rect(x, y + headerH, colW4, bodyH);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...PDF_CLR.black);
+    const lines = doc.splitTextToSize(bodies4[i], colW4 - 4);
+    doc.text(lines, x + 2, y + headerH + 5);
   });
-  y = doc.lastAutoTable.finalY + 3;
 
-  // Packing table
-  // Model(30)+Desc(75)+CartonNo(20)+Qty(18)+NetWt(25)+GrossWt(25)+Dims(30)+CBM(25) = 248 = 297-49(margins+extra) hmm
-  // pw-2*ml = 297-26 = 271
-  const colW = [30,75,18,14,25,25,35,25]; // sum=247... close enough with margins
-  let totalNet=0, totalGross=0, totalCBM=0, totalQty=0;
-  const prodRows = DB.products.map(p=>{
-    const cbm = (parseFloat(p.length||0)*parseFloat(p.width||0)*parseFloat(p.height||0))/1000000;
-    totalNet += parseFloat(p.netWeight||0);
-    totalGross += parseFloat(p.grossWeight||0);
+  y = y + headerH + bodyH + 4;
+  y = drawSeparatorLine(doc, y);
+
+  // PL表格
+  const colW = [30, 72, 20, 14, 26, 26, 36, 26]; // 250mm for landscape
+  let totalNet = 0, totalGross = 0, totalCBM = 0, totalQty = 0;
+
+  const prodRows = DB.products.map(p => {
+    const cbm = (parseFloat(p.length || 0) * parseFloat(p.width || 0) * parseFloat(p.height || 0)) / 1000000;
+    totalNet += parseFloat(p.netWeight || 0);
+    totalGross += parseFloat(p.grossWeight || 0);
     totalCBM += cbm;
-    totalQty += parseFloat(p.qty||0);
+    totalQty += parseFloat(p.qty || 0);
     return [
-      p.model||'', p.description||'', p.cartonNo||'',
-      String(p.qty||0),
-      parseFloat(p.netWeight||0).toFixed(3),
-      parseFloat(p.grossWeight||0).toFixed(3),
-      `${p.length||0}×${p.width||0}×${p.height||0}`,
+      p.model || '',
+      p.description || '',
+      p.cartonNo || '',
+      String(p.qty || 0),
+      parseFloat(p.netWeight || 0).toFixed(3),
+      parseFloat(p.grossWeight || 0).toFixed(3),
+      `${p.length || 0}×${p.width || 0}×${p.height || 0}`,
       cbm.toFixed(4)
     ];
   });
-  // Total row
+
   prodRows.push([
-    {content:'TOTAL',colSpan:3,styles:{fontStyle:'bold',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:String(totalQty),styles:{fontStyle:'bold',halign:'center',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:totalNet.toFixed(3),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:totalGross.toFixed(3),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}},
-    {content:'',styles:{fillColor:PDF_COLORS.totalBg}},
-    {content:totalCBM.toFixed(4),styles:{fontStyle:'bold',halign:'right',fillColor:PDF_COLORS.totalBg,textColor:PDF_COLORS.headerText}}
+    { content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: String(totalQty), styles: { fontStyle: 'bold', halign: 'center', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: totalNet.toFixed(3), styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: totalGross.toFixed(3), styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.white } },
+    { content: '', styles: { fillColor: PDF_CLR.navy } },
+    { content: totalCBM.toFixed(4), styles: { fontStyle: 'bold', halign: 'right', fillColor: PDF_CLR.navy, textColor: PDF_CLR.gold } }
   ]);
 
   doc.autoTable({
-    startY:y,
-    theme:'grid',
-    head:[[
-      (DB.colHeaders&&DB.colHeaders.pl[0])||'Model',
-      (DB.colHeaders&&DB.colHeaders.pl[1])||'Description',
-      {content:(DB.colHeaders&&DB.colHeaders.pl[2])||'Carton No.',styles:{halign:'center'}},
-      {content:(DB.colHeaders&&DB.colHeaders.pl[3])||'Qty\n(pcs)',styles:{halign:'center'}},
-      {content:(DB.colHeaders&&DB.colHeaders.pl[4])||'Net Wt\n(kg)',styles:{halign:'right'}},
-      {content:(DB.colHeaders&&DB.colHeaders.pl[5])||'Gross Wt\n(kg)',styles:{halign:'right'}},
-      {content:(DB.colHeaders&&DB.colHeaders.pl[6])||'L×W×H\n(cm)',styles:{halign:'center'}},
-      {content:'CBM\n(m³)',styles:{halign:'right'}}
+    startY: y,
+    theme: 'grid',
+    head: [[
+      (DB.colHeaders && DB.colHeaders.pl[0]) || 'Model',
+      (DB.colHeaders && DB.colHeaders.pl[1]) || 'Description',
+      { content: (DB.colHeaders && DB.colHeaders.pl[2]) || 'Carton No.', styles: { halign: 'center' } },
+      { content: (DB.colHeaders && DB.colHeaders.pl[3]) || 'Qty\n(pcs)', styles: { halign: 'center' } },
+      { content: (DB.colHeaders && DB.colHeaders.pl[4]) || 'Net Wt\n(kg)', styles: { halign: 'center' } },
+      { content: (DB.colHeaders && DB.colHeaders.pl[5]) || 'Gross Wt\n(kg)', styles: { halign: 'center' } },
+      { content: (DB.colHeaders && DB.colHeaders.pl[6]) || 'L×W×H\n(cm)', styles: { halign: 'center' } },
+      { content: 'CBM\n(m³)', styles: { halign: 'center' } }
     ]],
-    body:prodRows,
-    styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',lineColor:PDF_COLORS.border,lineWidth:0.3,textColor:PDF_COLORS.textDark},
-    headStyles:{fillColor:PDF_COLORS.headerBg,textColor:PDF_COLORS.headerText,fontStyle:'bold',fontSize:6.5,cellPadding:2},
-    columnStyles:{
-      0:{cellWidth:colW[0]},
-      1:{cellWidth:colW[1]},
-      2:{cellWidth:colW[2],halign:'center'},
-      3:{cellWidth:colW[3],halign:'center'},
-      4:{cellWidth:colW[4],halign:'right'},
-      5:{cellWidth:colW[5],halign:'right'},
-      6:{cellWidth:colW[6],halign:'center'},
-      7:{cellWidth:colW[7],halign:'right'}
+    body: prodRows,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+      lineColor: PDF_CLR.grayBorder,
+      lineWidth: 0.3,
+      textColor: PDF_CLR.black,
+      font: 'helvetica',
+      valign: 'middle'
     },
-    alternateRowStyles:{fillColor:PDF_COLORS.rowEven},
-    rowPageBreak:'avoid',
-    pageBreak:'avoid',
-    margin:{left:ml,right:ml}
+    headStyles: {
+      fillColor: PDF_CLR.navy,
+      textColor: PDF_CLR.white,
+      fontStyle: 'bold',
+      fontSize: 8,
+      cellPadding: 2,
+      halign: 'center',
+      valign: 'middle'
+    },
+    columnStyles: {
+      0: { cellWidth: colW[0], halign: 'left' },
+      1: { cellWidth: colW[1], halign: 'left' },
+      2: { cellWidth: colW[2], halign: 'center' },
+      3: { cellWidth: colW[3], halign: 'center' },
+      4: { cellWidth: colW[4], halign: 'right' },
+      5: { cellWidth: colW[5], halign: 'right' },
+      6: { cellWidth: colW[6], halign: 'center' },
+      7: { cellWidth: colW[7], halign: 'right' }
+    },
+    rowPageBreak: 'avoid',
+    pageBreak: 'auto',
+    margin: { left: ml, right: ml },
+    showHead: 'everyPage'
   });
 
-  y = doc.lastAutoTable.finalY + 4;
+  y = doc.lastAutoTable.finalY + 5;
 
-  // Notes
-  if(pl.notes && pl.notes.length){
-    doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-    doc.text('NOTES', ml, y); y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...PDF_COLORS.textMid);
-    pl.notes.forEach((n,i)=>{
-      if(y>202){doc.addPage();y=15;}
-      const lines = doc.splitTextToSize(`${i+1}. ${n}`, pw-2*ml);
-      doc.text(lines,ml,y); y += lines.length*4+0.8;
+  // 备注
+  if (pl.notes && pl.notes.length) {
+    if (y > 180) { doc.addPage(); y = 15; }
+    const noteW = pw - 2 * ml;
+    doc.setFillColor(...PDF_CLR.grayHeader);
+    doc.rect(ml, y, noteW, 6, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...PDF_CLR.black);
+    doc.text('NOTES', ml + 2, y + 4.5);
+
+    let noteH = pl.notes.length * 5 + 4;
+    doc.setDrawColor(...PDF_CLR.grayBorder);
+    doc.setLineWidth(0.3);
+    doc.rect(ml, y + 6, noteW, noteH);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(...PDF_CLR.black);
+    pl.notes.forEach((n, i) => {
+      const noteText = `${i + 1}.    ${n}`;
+      const lines = doc.splitTextToSize(noteText, noteW - 6);
+      doc.text(lines, ml + 3, y + 11 + i * 5);
     });
-    y += 2;
+    y = y + 6 + noteH + 5;
   }
 
-  // Signatures
-  if(y>195){doc.addPage();y=15;}
-  const sigW2 = (pw-2*ml)/2 - 10;
-  doc.setDrawColor(...PDF_COLORS.border); doc.setLineWidth(0.3);
-  doc.rect(ml,y,sigW2,18); doc.rect(ml+sigW2+20,y,sigW2,18);
-  doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_COLORS.textDark);
-  doc.text('SELLER',ml+sigW2/2,y+4.5,{align:'center'});
-  doc.text('BUYER',ml+sigW2+20+sigW2/2,y+4.5,{align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...PDF_COLORS.textMid);
-  doc.text('Authorized Signature: ___________________',ml+3,y+10);
-  doc.text('Company Stamp:',ml+3,y+15);
-  doc.text('Authorized Signature: ___________________',ml+sigW2+23,y+10);
-  doc.text('Company Stamp:',ml+sigW2+23,y+15);
+  // 签名
+  if (y > 165) { doc.addPage(); y = 15; }
+  const sigW = (pw - 2 * ml - 6) / 2;
+  const sigH = 35;
+  doc.setDrawColor(...PDF_CLR.grayBorder);
+  doc.setLineWidth(0.3);
+  doc.rect(ml, y, sigW * 2 + 6, sigH);
+  doc.line(ml + sigW + 3, y, ml + sigW + 3, y + sigH);
 
-  doc.save(`PL_${pl.docNo}_${pl.date||'draft'}.pdf`);
-  toast('PL PDF 已生成下载！','ok');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SELLER', ml + 3, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + 3, y + 18);
+  doc.text('Company Stamp:', ml + 3, y + 26);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('BUYER', ml + sigW + 6, y + 6);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signature: ___________________', ml + sigW + 6, y + 18);
+  doc.text('Company Stamp:', ml + sigW + 6, y + 26);
+
+  drawFooter(doc, 'PACKING LIST', 1, 1);
+
+  doc.save(`PL_${pl.docNo}_${pl.date || 'draft'}.pdf`);
+  toast('PL PDF 已生成下载！', 'ok');
 }
 
 /* ═══════════════════════════════
